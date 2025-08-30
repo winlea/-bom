@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全尺寸合格率统计</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: #34495e;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .status-excellent { background: #d4edda; color: #155724; }
+        .status-good { background: #cce7ff; color: #004085; }
+        .status-qualified { background: #fff3cd; color: #856404; }
+        .status-unqualified { background: #f8d7da; color: #721c24; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-excellent { background: #28a745; }
+        .progress-good { background: #007bff; }
+        .progress-qualified { background: #ffc107; }
+        .progress-unqualified { background: #dc3545; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .project-selector {
+            margin-bottom: 20px;
+        }
+        
+        .project-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>全尺寸合格率统计</h1>
+            <div class="project-selector">
+                <label for="projectSelect">选择项目：</label>
+                <select id="projectSelect">
+                    <option value="">请选择项目...</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="statsContainer" class="stats-grid" style="display: none;">
+            <div class="stat-card">
+                <div class="stat-value" id="overallRate">--</div>
+                <div class="stat-label">总体合格率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalParts">--</div>
+                <div class="stat-label">零件总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalDimensions">--</div>
+                <div class="stat-label">尺寸总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="qualifiedDimensions">--</div>
+                <div class="stat-label">合格尺寸数</div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div class="table-header">零件合格率详情</div>
+            <div id="loadingMessage" class="loading">请选择项目查看合格率数据</div>
+            <div id="errorMessage" class="error" style="display: none;"></div>
+            <table id="qualificationTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>零件编号</th>
+                        <th>零件名称</th>
+                        <th>尺寸总数</th>
+                        <th>合格尺寸数</th>
+                        <th>合格率</th>
+                        <th>状态</th>
+                        <th>进度条</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 获取项目列表
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                const data = await response.json();
+                
+                const select = document.getElementById('projectSelect');
+                select.innerHTML = '<option value="">请选择项目...</option>';
+                
+                // 适配实际的API返回格式
+                const projects = data.items || data.projects || [];
+                if (projects && projects.length > 0) {
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.id;
+                        option.textContent = project.name || `项目 ${project.id}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载项目列表失败:', error);
+            }
+        }
+        
+        // 获取合格率数据
+        async function loadQualificationData(projectId) {
+            if (!projectId) {
+                document.getElementById('statsContainer').style.display = 'none';
+                document.getElementById('qualificationTable').style.display = 'none';
+                document.getElementById('loadingMessage').textContent = '请选择项目查看合格率数据';
+                document.getElementById('loadingMessage').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('loadingMessage').textContent = '正在加载数据...';
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('qualificationTable').style.display = 'none';
+            document.getElementById('statsContainer').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/qualification/table/${projectId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayQualificationData(data);
+                } else {
+                    showError(data.message || '获取数据失败');
+                }
+            } catch (error) {
+                showError('网络请求失败: ' + error.message);
+            }
+        }
+        
+        // 显示合格率数据
+        function displayQualificationData(data) {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // 更新统计卡片
+            document.getElementById('overallRate').textContent = data.overall_rate + '%';
+            document.getElementById('totalParts').textContent = data.total_parts;
+            document.getElementById('totalDimensions').textContent = data.total_dimensions;
+            document.getElementById('qualifiedDimensions').textContent = data.qualified_dimensions;
+            document.getElementById('statsContainer').style.display = 'grid';
+            
+            // 更新表格
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.parts.forEach(part => {
+                const row = document.createElement('tr');
+                
+                const statusClass = getStatusClass(part.status);
+                const progressClass = getProgressClass(part.qualification_rate);
+                
+                row.innerHTML = `
+                    <td>${part.part_id}</td>
+                    <td>${part.part_name}</td>
+                    <td>${part.total_dimensions}</td>
+                    <td>${part.qualified_dimensions}</td>
+                    <td>${part.qualification_rate}%</td>
+                    <td><span class="status-badge ${statusClass}">${part.status}</span></td>
+                    <td>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${progressClass}" style="width: ${part.qualification_rate}%"></div>
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            document.getElementById('qualificationTable').style.display = 'table';
+        }
+        
+        // 显示错误信息
+        function showError(message) {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('qualificationTable').style.display = 'none';
+            document.getElementById('statsContainer').style.display = 'none';
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+        
+        // 获取状态样式类
+        function getStatusClass(status) {
+            switch (status) {
+                case '优秀': return 'status-excellent';
+                case '良好': return 'status-good';
+                case '合格': return 'status-qualified';
+                case '不合格': return 'status-unqualified';
+                default: return 'status-qualified';
+            }
+        }
+        
+        // 获取进度条样式类
+        function getProgressClass(rate) {
+            if (rate >= 95) return 'progress-excellent';
+            if (rate >= 85) return 'progress-good';
+            if (rate >= 70) return 'progress-qualified';
+            return 'progress-unqualified';
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProjects();
+            
+            document.getElementById('projectSelect').addEventListener('change', function() {
+                loadQualificationData(this.value);
+            });
+        });
+    </script>
+</body>
+</html>

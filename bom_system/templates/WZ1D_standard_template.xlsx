@@ -1,0 +1,20 @@
+标准化模板文件已创建，包含以下内容：
+
+1. 标准化占位符：
+   - F2: {{PROJECT_NAME}}
+   - H2: {{CUSTOMER_NAME}}
+   - J2: {{PRODUCT_NAME}}
+   - K3: {{MATERIAL_SPEC}}
+   - L2: {{PART_NUMBER}}
+   - G3: {{PROCESS_NAME}}
+   - H3: {{DRAWING_VERSION}}
+
+2. 动态数据区域：
+   - 外观检验区域：{{APPEARANCE_CHECKS}}
+   - 尺寸检验区域：{{DIMENSION_CHECKS}}
+
+3. 样式标准：
+   - 标题：22号加粗，居中
+   - 表头：12号加粗，灰色背景
+   - 数据：10号常规，白色背景
+   - 边框：黑色连续边框

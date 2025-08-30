@@ -1,0 +1,86 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+# 代码格式化工具，无妥协的格式化器
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    | venv
+    | .venv
+    | .git
+    | .mypy_cache
+    | .pytest_cache
+    | build
+    | dist
+    | __pycache__
+    | node_modules
+    | uploads
+    | static
+    | templates
+)/
+'''
+
+[tool.isort]
+# 自动整理import语句，与black风格保持一致
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+known_first_party = ["bom_system"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+[tool.flake8]
+# 代码风格和质量检查
+max-line-length = 88
+max-complexity = 18
+ignore = ["E203", "E266", "E501", "W503", "F403", "F401"]
+exclude = [
+    "venv/",
+    ".venv/",
+    ".git/",
+    "__pycache__/",
+    "build/",
+    "dist/",
+    "migrations/",
+    "alembic/versions/",
+    "node_modules/",
+    "uploads/",
+    "static/",
+    "templates/"
+]
+per-file-ignores = [
+    "__init__.py:F401"  # 允许在__init__.py中导入未使用的模块用于暴露API
+]
+
+[tool.mypy]
+# 静态类型检查
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # 暂时关闭，逐步启用
+check_untyped_defs = true
+ignore_missing_imports = true  # 对某些没有类型提示的第三方库设置为true
+exclude = [
+    "venv/",
+    ".venv/",
+    "node_modules/",
+    "uploads/",
+    "static/",
+    "templates/"
+]
+
+[tool.pytest.ini_options]
+# 测试配置
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"

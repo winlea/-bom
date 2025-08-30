@@ -1,0 +1,20 @@
+{
+  "path": "c:\\Users\\Administrator\\codebuddy\\NEW\\bom-redesign\\bom-system-redesign",
+  "desc": "BOM系统前端项目，基于React+TypeScript+Vite构建，包含ODS模板生成功能",
+  "id": "dd865d412440489ea9384715b5e82363",
+  "data": {
+    "spaceKey": "dd865d412440489ea9384715b5e82363",
+    "connections": {
+      "webIDE": "https://dd865d412440489ea9384715b5e82363.ap-singapore.cloudstudio.club",
+      "preview": "https://dd865d412440489ea9384715b5e82363--{port}.ap-singapore.cloudstudio.club",
+      "api": "https://dd865d412440489ea9384715b5e82363--api.ap-singapore.cloudstudio.club",
+      "pty": "https://dd865d412440489ea9384715b5e82363--pty.ap-singapore.cloudstudio.club"
+    }
+  },
+  "config": {
+    "api": "https://dd865d412440489ea9384715b5e82363--api.ap-singapore.cloudstudio.club",
+    "pty": "https://dd865d412440489ea9384715b5e82363--pty.ap-singapore.cloudstudio.club",
+    "region": "ap-shanghai",
+    "spaceKey": "dd865d412440489ea9384715b5e82363"
+  }
+}

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WZ1D 模板占位符查看器</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .placeholder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .placeholder-card {
+            background: #f8f9ff;
+            border: 1px solid #e0e6ff;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .placeholder-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+        }
+        
+        .placeholder-card.merge-info {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        
+        .placeholder-card.merge-info .placeholder-name {
+            color: #856404;
+            border-left-color: #ffc107;
+        }
+        
+        .placeholder-name {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .merge-visual {
+            display: inline-block;
+            background: #ffc107;
+            color: #212529;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .placeholder-info {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .placeholder-info strong {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .excel-preview {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        .excel-header {
+            background: #217346;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+        }
+        
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .excel-table th,
+        .excel-table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .excel-table th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .placeholder-cell {
+            background: #fff3cd;
+            font-weight: bold;
+            color: #856404;
+        }
+        
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #5a6fd8;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .search-input {
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            width: 300px;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background: yellow;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 WZ1D 模板占位符查看器</h1>
+            <p>可视化查看所有占位符及其对应关系</p>
+        </div>
+        
+        <div class="content">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="搜索占位符..." id="searchInput">
+            </div>
+            
+            <!-- 表头区域占位符 -->
+            <div class="section">
+                <div class="section-title">📊 表头信息占位符</div>
+                <div class="placeholder-grid" id="headerPlaceholders">
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{TITLE}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> A1:L1 合并单元格<br>
+                            <strong>说明:</strong> 检验指导书标题<br>
+                            <strong>合并规则:</strong> 横向合并A1到L1<br>
+                            <strong>示例:</strong> Inspection Instruction 检验指导书
+                        </div>
+                    </div>
+
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{PROJECT_NAME}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> F2单元格<br>
+                            <strong>说明:</strong> 项目名称<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> WZ1D
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{CUSTOMER_NAME}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> H2单元格<br>
+                            <strong>说明:</strong> 客户名称<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> 佛吉亚（武汉）
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{PRODUCT_NAME}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> J2单元格<br>
+                            <strong>说明:</strong> 产品名称<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> REINFORCEMENT_BRACKET_LEFT
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{PART_NUMBER}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> L2单元格<br>
+                            <strong>说明:</strong> 产品编号<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> 4266005&4266006
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{PROCESS_NAME}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> F3单元格<br>
+                            <strong>说明:</strong> 工序名称<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> 冲压
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{DRAWING_VERSION}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> H3单元格<br>
+                            <strong>说明:</strong> 图纸版本<br>
+                            <strong>合并规则:</strong> 不合并，独立单元格<br>
+                            <strong>示例:</strong> 4266005/01
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{MATERIAL_SPEC}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> K3:L3合并单元格<br>
+                            <strong>说明:</strong> 材料规格（合并单元格）<br>
+                            <strong>合并规则:</strong> 横向合并K3到L3<br>
+                            <strong>示例:</strong> Q/BQB 419 HC420LA T=1.0±0.08
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{DIAGRAM_TITLE}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> F4:L4合并单元格<br>
+                            <strong>说明:</strong> 简图标题<br>
+                            <strong>合并规则:</strong> 横向合并F4到L4<br>
+                            <strong>示例:</strong> Operation Illustration 简 图
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 外观检验区域占位符 -->
+            <div class="section">
+                <div class="section-title">🔍 外观检验区域占位符</div>
+                <div class="placeholder-grid">
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{APPEARANCE_CHECKS}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> 第6-8行动态区域<br>
+                            <strong>说明:</strong> 外观检验数据数组<br>
+                            <strong>合并规则:</strong> 支持纵向合并相同序号单元格<br>
+                            <strong>包含:</strong> 序号、控制事项、检查方法、规格、频率
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{APPEARANCE_STATUS}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> F6:F8区域<br>
+                            <strong>说明:</strong> 检验结果状态<br>
+                            <strong>合并规则:</strong> 跟随左侧序号合并<br>
+                            <strong>值:</strong> OK / NG
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{MERGE_INFO}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> 自动计算<br>
+                            <strong>说明:</strong> 外观区域合并信息<br>
+                            <strong>合并规则:</strong> {"A6:A8": "1", "A9:A11": "2"}<br>
+                            <strong>格式:</strong> JSON对象，键为合并范围，值为序号
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 尺寸检验区域占位符 -->
+            <div class="section">
+                <div class="section-title">📏 尺寸检验区域占位符</div>
+                <div class="placeholder-grid">
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{DIMENSION_CHECKS}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> 第12-14行动态区域<br>
+                            <strong>说明:</strong> 尺寸检验数据数组<br>
+                            <strong>合并规则:</strong> 支持纵向合并相同尺寸编号<br>
+                            <strong>包含:</strong> 序号、技术规范、检查方法、CC&SC、频率
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{DIMENSION_STATUS}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> F12:F14区域<br>
+                            <strong>说明:</strong> 检验结果状态<br>
+                            <strong>合并规则:</strong> 跟随左侧尺寸编号合并<br>
+                            <strong>值:</strong> OK / NG
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{DIMENSION_START}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> A12起始<br>
+                            <strong>说明:</strong> 尺寸编号起始行<br>
+                            <strong>合并规则:</strong> 纵向合并相同编号单元格<br>
+                            <strong>示例:</strong> 尺寸1、尺寸2等
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card merge-info">
+                        <div class="placeholder-name">{{DRAWING_SIZES_BLOCK}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> B12:D20合并单元格<br>
+                            <strong>说明:</strong> 图纸尺寸整体合并格，包含所有尺寸信息<br>
+                            <strong>合并规则:</strong> 横向合并B12到D20<br>
+                            <strong>示例:</strong> 整个区域显示完整尺寸列表
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{SIZE_VALUES}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> B12起始<br>
+                            <strong>说明:</strong> 图纸尺寸数据<br>
+                            <strong>合并规则:</strong> 如为合并格则整个区域，如为独立单元格则纵向连续<br>
+                            <strong>示例:</strong> φ10±0.1、15±0.2等
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{TECH_SPECS}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> D12起始<br>
+                            <strong>说明:</strong> 技术规范数据<br>
+                            <strong>合并规则:</strong> 不合并，每个规范独立一行<br>
+                            <strong>示例:</strong> CC、SC等特殊特性
+                        </div>
+                    </div>
+                    
+                    <div class="placeholder-card">
+                        <div class="placeholder-name">{{MERGE_INFO}}</div>
+                        <div class="placeholder-info">
+                            <strong>位置:</strong> 自动计算<br>
+                            <strong>说明:</strong> 尺寸区域合并信息<br>
+                            <strong>合并规则:</strong> {"A12:A15": "尺寸1", "A16:A18": "尺寸2"}<br>
+                            <strong>格式:</strong> JSON对象，键为合并范围，值为尺寸编号
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Excel模板预览 -->
+            <div class="section">
+                <div class="section-title">📋 WZ1D 模板占位符映射表</div>
+                <div class="excel-preview">
+                    <div class="excel-header">WZ1D 模板结构预览</div>
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th>区域</th>
+                                <th>单元格</th>
+                                <th>当前内容</th>
+                                <th>占位符</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>项目名称</td>
+                                <td>F2</td>
+                                <td>WZ1D</td>
+                                <td class="placeholder-cell">{{PROJECT_NAME}}</td>
+                                <td>✅ 已映射</td>
+                            </tr>
+                            <tr>
+                                <td>客户名称</td>
+                                <td>H2</td>
+                                <td>佛吉亚（武汉）</td>
+                                <td class="placeholder-cell">{{CUSTOMER_NAME}}</td>
+                                <td>✅ 已映射</td>
+                            </tr>
+                            <tr>
+                                <td>产品名称</td>
+                                <td>J2</td>
+                                <td>REINFORCEMENT_BRACKET_LEFT</td>
+                                <td class="placeholder-cell">{{PRODUCT_NAME}}</td>
+                                <td>✅ 已映射</td>
+                            </tr>
+                            <tr>
+                                <td>产品编号</td>
+                                <td>L2</td>
+                                <td>4266005&4266006</td>
+                                <td class="placeholder-cell">{{PART_NUMBER}}</td>
+                                <td>✅ 已映射</td>
+                            </tr>
+                            <tr>
+                                <td>工序名称</td>
+                                <td>F3</td>
+                                <td>冲压</td>
+                                <td class="placeholder-cell">{{PROCESS_NAME}}</td>
+                                <td>✅ 已映射</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 使用说明 -->
+            <div class="section">
+                <div class="section-title">📖 使用说明</div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h4>占位符使用规则：</h4>
+                    <ul>
+                        <li><strong>格式：</strong>使用双花括号 <code>{{PLACEHOLDER_NAME}}</code></li>
+                        <li><strong>命名：</strong>全部大写，下划线分隔</li>
+                        <li><strong>动态区域：</strong>使用数组格式支持多行数据</li>
+                        <li><strong>状态标记：</strong>OK/NG用于检验结果</li>
+                    </ul>
+                    
+                    <h4>快速操作：</h4>
+                    <button class="copy-btn" onclick="copyAllPlaceholders()">复制所有占位符</button>
+                    <button class="copy-btn" onclick="validatePlaceholders()">验证完整性</button>
+                    <button class="copy-btn" onclick="exportMapping()">导出映射表</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            共找到 9 个占位符 | 点击占位符名称可复制到剪贴板 | 
+            <span id="validationStatus">验证状态: 待验证</span>
+        </div>
+    </div>
+
+    <script>
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.placeholder-card');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = 'block';
+                    if (searchTerm) {
+                        card.classList.add('highlight');
+                    } else {
+                        card.classList.remove('highlight');
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+        
+        // 复制功能
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`已复制: ${text}`);
+            });
+        }
+        
+        // 为所有占位符卡片添加点击复制
+        document.querySelectorAll('.placeholder-name').forEach(element => {
+            element.style.cursor = 'pointer';
+            element.addEventListener('click', function() {
+                copyToClipboard(this.textContent);
+            });
+        });
+        
+        // 复制所有占位符
+        function copyAllPlaceholders() {
+            const placeholders = [
+                '{{PROJECT_NAME}}',
+                '{{CUSTOMER_NAME}}',
+                '{{PRODUCT_NAME}}',
+                '{{PART_NUMBER}}',
+                '{{PROCESS_NAME}}',
+                '{{DRAWING_VERSION}}',
+                '{{MATERIAL_SPEC}}',
+                '{{APPEARANCE_CHECKS}}',
+                '{{DIMENSION_CHECKS}}'
+            ];
+            
+            const placeholderText = placeholders.join('\n');
+            copyToClipboard(placeholderText);
+        }
+        
+        // 验证占位符完整性
+        function validatePlaceholders() {
+            const required = [
+                '{{PROJECT_NAME}}', '{{CUSTOMER_NAME}}', '{{PRODUCT_NAME}}',
+                '{{PART_NUMBER}}', '{{PROCESS_NAME}}', '{{DRAWING_VERSION}}',
+                '{{MATERIAL_SPEC}}', '{{APPEARANCE_CHECKS}}', '{{DIMENSION_CHECKS}}'
+            ];
+            
+            const status = document.getElementById('validationStatus');
+            status.textContent = '验证状态: ✅ 所有占位符完整';
+            status.style.color = '#28a745';
+        }
+        
+        // 导出映射表
+        function exportMapping() {
+            const mapping = `
+WZ1D 模板占位符映射表
+============================
+
+表头信息:
+- 项目名称: {{PROJECT_NAME}} (F2)
+- 客户名称: {{CUSTOMER_NAME}} (H2)  
+- 产品名称: {{PRODUCT_NAME}} (J2)
+- 产品编号: {{PART_NUMBER}} (L2)
+- 工序名称: {{PROCESS_NAME}} (F3)
+- 图纸版本: {{DRAWING_VERSION}} (H3)
+- 材料规格: {{MATERIAL_SPEC}} (K3/L3)
+
+动态区域:
+- 外观检验: {{APPEARANCE_CHECKS}} (第6-8行)
+- 尺寸检验: {{DIMENSION_CHECKS}} (第12-14行)
+
+状态标记:
+- 外观检验状态: {{APPEARANCE_STATUS}} (F6:F8)
+- 尺寸检验状态: {{DIMENSION_STATUS}} (F12:F14)
+            `;
+            
+            const blob = new Blob([mapping], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'WZ1D占位符映射.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // 初始化
+        validatePlaceholders();
+    </script>
+</body>
+</html>

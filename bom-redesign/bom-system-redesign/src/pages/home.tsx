@@ -1,0 +1,282 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import Layout from '@/components/layout';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Package,
+  FolderOpen,
+  Ruler,
+  FileText,
+  Settings,
+  Upload,
+  Download,
+  BarChart3,
+  Users,
+  FileSpreadsheet,
+} from 'lucide-react';
+
+export default function HomePage() {
+  const navigate = useNavigate();
+
+  // 功能模块定义
+  const modules = [
+    {
+      title: '项目管理',
+      description: '创建和管理BOM项目',
+      icon: <FolderOpen className="h-10 w-10 text-blue-600" />,
+      path: '/projects',
+      color: 'bg-blue-50',
+    },
+    {
+      title: '零件管理',
+      description: '管理项目中的零件数据',
+      icon: <Package className="h-10 w-10 text-green-600" />,
+      path: '/parts',
+      color: 'bg-green-50',
+    },
+    {
+      title: '尺寸管理',
+      description: '管理零件的尺寸数据',
+      icon: <Ruler className="h-10 w-10 text-purple-600" />,
+      path: '/dimensions',
+      color: 'bg-purple-50',
+    },
+    {
+      title: 'ODS生成器',
+      description: '生成作业指导书文档',
+      icon: <FileSpreadsheet className="h-10 w-10 text-emerald-600" />,
+      path: '/ods',
+      color: 'bg-emerald-50',
+    },
+    {
+      title: '数据导入',
+      description: '导入BOM数据',
+      icon: <Upload className="h-10 w-10 text-orange-600" />,
+      path: '/import',
+      color: 'bg-orange-50',
+    },
+    {
+      title: '数据导出',
+      description: '导出项目数据',
+      icon: <Download className="h-10 w-10 text-cyan-600" />,
+      path: '/export',
+      color: 'bg-cyan-50',
+    },
+    {
+      title: '全尺寸合格率',
+      description: '统计零件尺寸合格率',
+      icon: <BarChart3 className="h-10 w-10 text-amber-600" />,
+      path: '/qualification-rate',
+      color: 'bg-amber-50',
+    },
+    {
+      title: '报表统计',
+      description: '查看数据统计和报表',
+      icon: <BarChart3 className="h-10 w-10 text-red-600" />,
+      path: '/reports',
+      color: 'bg-red-50',
+    },
+    {
+      title: '用户管理',
+      description: '管理系统用户和权限',
+      icon: <Users className="h-10 w-10 text-indigo-600" />,
+      path: '/users',
+      color: 'bg-indigo-50',
+    },
+    {
+      title: '系统设置',
+      description: '配置系统参数',
+      icon: <Settings className="h-10 w-10 text-slate-600" />,
+      path: '/settings',
+      color: 'bg-slate-50',
+    },
+  ];
+
+  // 最近项目数据（示例）
+  const recentProjects = [
+    { id: 1, name: '发动机盖项目', parts_count: 45, updated_at: '2023-06-15' },
+    { id: 2, name: '车门组件', parts_count: 32, updated_at: '2023-06-10' },
+    { id: 3, name: '底盘系统', parts_count: 78, updated_at: '2023-06-05' },
+  ];
+
+  return (
+    <Layout>
+      <div className="p-6 max-w-7xl mx-auto w-full">
+        {/* 欢迎区域 */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-8 mb-8 text-white">
+          <h1 className="text-3xl font-bold mb-2">欢迎使用BOM管理系统</h1>
+          <p className="text-blue-100 mb-6">高效管理您的物料清单和零件数据</p>
+          <div className="flex flex-wrap gap-4">
+            <Button
+              onClick={() => navigate('/projects/new')}
+              className="bg-white text-blue-700 hover:bg-blue-50"
+            >
+              <FolderOpen className="mr-2 h-4 w-4" /> 创建新项目
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/projects')}
+              className="bg-transparent border-white text-white hover:bg-blue-700"
+            >
+              <Package className="mr-2 h-4 w-4" /> 查看所有项目
+            </Button>
+          </div>
+        </div>
+
+        {/* 功能模块导航 */}
+        <h2 className="text-2xl font-bold mb-4 text-slate-800">功能模块</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {modules.map((module, index) => (
+            <Card
+              key={index}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(module.path)}
+            >
+              <CardContent className="p-6">
+                <div className={`rounded-full p-3 inline-block mb-3 ${module.color}`}>
+                  {module.icon}
+                </div>
+                <h3 className="text-lg font-medium mb-1">{module.title}</h3>
+                <p className="text-sm text-slate-500">{module.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* 最近项目 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>最近项目</CardTitle>
+                <CardDescription>您最近访问的项目</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentProjects.map(project => (
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 cursor-pointer"
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                    >
+                      <div className="flex items-center">
+                        <div className="bg-blue-100 p-2 rounded-md mr-3">
+                          <FolderOpen className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">{project.name}</h4>
+                          <p className="text-sm text-slate-500">{project.parts_count} 个零件</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-slate-500">更新于 {project.updated_at}</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full" onClick={() => navigate('/projects')}>
+                  查看所有项目
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+
+          {/* 快速操作 */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>快速操作</CardTitle>
+                <CardDescription>常用功能快速入口</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/projects/new')}
+                >
+                  <FolderOpen className="mr-2 h-4 w-4 text-blue-600" />
+                  创建新项目
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/import')}
+                >
+                  <Upload className="mr-2 h-4 w-4 text-green-600" />
+                  导入BOM数据
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/export')}
+                >
+                  <Download className="mr-2 h-4 w-4 text-orange-600" />
+                  导出项目数据
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/ods')}
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
+                  生成ODS文档
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/qualification-rate')}
+                >
+                  <BarChart3 className="mr-2 h-4 w-4 text-amber-600" />
+                  全尺寸合格率
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/reports')}
+                >
+                  <BarChart3 className="mr-2 h-4 w-4 text-purple-600" />
+                  查看数据报表
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* 系统状态 */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>系统状态</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-500">项目总数</span>
+                    <span className="font-medium">24</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-500">零件总数</span>
+                    <span className="font-medium">1,245</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-500">尺寸记录</span>
+                    <span className="font-medium">3,782</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-500">系统版本</span>
+                    <span className="font-medium">v2.0.0</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </Layout>
+  );
+}

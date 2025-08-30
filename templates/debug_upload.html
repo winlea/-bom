@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>上传API测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>ODS生成器上传API测试</h1>
+    
+    <h3>1. API健康检查</h3>
+    <button onclick="testHealth()">测试 /health</button>
+    <div id="health-result" class="result"></div>
+    
+    <h3>2. 无文件上传测试</h3>
+    <button onclick="testEmptyUpload()">测试无文件上传</button>
+    <div id="empty-result" class="result"></div>
+    
+    <h3>3. 文件上传测试</h3>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <button onclick="testFileUpload()">上传文件</button>
+    <div id="upload-result" class="result"></div>
+    
+    <h3>4. 模板列表测试</h3>
+    <button onclick="testTemplateList()">获取模板列表</button>
+    <div id="list-result" class="result"></div>
+
+    <script>
+        async function testHealth() {
+            try {
+                const response = await fetch('/health');
+                const result = await response.json();
+                document.getElementById('health-result').innerHTML = 
+                    `状态: ${response.status}\n响应: ${JSON.stringify(result, null, 2)}`;
+                document.getElementById('health-result').className = 'result success';
+            } catch (error) {
+                document.getElementById('health-result').innerHTML = `错误: ${error.message}`;
+                document.getElementById('health-result').className = 'result error';
+            }
+        }
+
+        async function testEmptyUpload() {
+            try {
+                const response = await fetch('/api/ods-generator/upload-template', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                document.getElementById('empty-result').innerHTML = 
+                    `状态: ${response.status}\n响应: ${JSON.stringify(result, null, 2)}`;
+                
+                if (response.status === 400 && result.message && result.message.includes('请选择文件')) {
+                    document.getElementById('empty-result').className = 'result success';
+                } else {
+                    document.getElementById('empty-result').className = 'result error';
+                }
+            } catch (error) {
+                document.getElementById('empty-result').innerHTML = `错误: ${error.message}`;
+                document.getElementById('empty-result').className = 'result error';
+            }
+        }
+
+        async function testFileUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                document.getElementById('upload-result').innerHTML = '请先选择文件';
+                document.getElementById('upload-result').className = 'result error';
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/ods-generator/upload-template', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const contentType = response.headers.get('content-type');
+                let result;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    result = await response.text();
+                }
+                
+                document.getElementById('upload-result').innerHTML = 
+                    `状态: ${response.status}\n内容类型: ${contentType}\n响应: ${typeof result === 'object' ? JSON.stringify(result, null, 2) : result}`;
+                
+                if (response.status === 200 && result.success) {
+                    document.getElementById('upload-result').className = 'result success';
+                } else {
+                    document.getElementById('upload-result').className = 'result error';
+                }
+            } catch (error) {
+                document.getElementById('upload-result').innerHTML = `错误: ${error.message}`;
+                document.getElementById('upload-result').className = 'result error';
+            }
+        }
+
+        async function testTemplateList() {
+            try {
+                const response = await fetch('/api/ods-generator/templates');
+                const result = await response.json();
+                document.getElementById('list-result').innerHTML = 
+                    `状态: ${response.status}\n响应: ${JSON.stringify(result, null, 2)}`;
+                
+                if (response.status === 200 && result.success) {
+                    document.getElementById('list-result').className = 'result success';
+                } else {
+                    document.getElementById('list-result').className = 'result error';
+                }
+            } catch (error) {
+                document.getElementById('list-result').innerHTML = `错误: ${error.message}`;
+                document.getElementById('list-result').className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
