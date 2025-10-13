@@ -1,20 +1,20 @@
 {
-  "path": "c:\\Users\\Administrator\\codebuddy\\NEW\\bom-redesign\\bom-system-redesign",
-  "desc": "BOM系统前端项目，基于React+TypeScript+Vite构建，包含ODS模板生成功能",
-  "id": "dd865d412440489ea9384715b5e82363",
+  "path": "c:\\Users\\Administrator\\NEWBOM\\-bom",
+  "desc": "BOM 图像管理系统：Python Flask 应用，提供 Base64/URL 图像上传与下载接口，修复缺失模块引用",
+  "id": "0f614c72ee71429085fe24d9b2cd89df",
   "data": {
-    "spaceKey": "dd865d412440489ea9384715b5e82363",
+    "spaceKey": "0f614c72ee71429085fe24d9b2cd89df",
     "connections": {
-      "webIDE": "https://dd865d412440489ea9384715b5e82363.ap-singapore.cloudstudio.club",
-      "preview": "https://dd865d412440489ea9384715b5e82363--{port}.ap-singapore.cloudstudio.club",
-      "api": "https://dd865d412440489ea9384715b5e82363--api.ap-singapore.cloudstudio.club",
-      "pty": "https://dd865d412440489ea9384715b5e82363--pty.ap-singapore.cloudstudio.club"
+      "webIDE": "https://0f614c72ee71429085fe24d9b2cd89df.ap-singapore.cloudstudio.club",
+      "preview": "",
+      "api": "https://0f614c72ee71429085fe24d9b2cd89df--api.ap-singapore.cloudstudio.club",
+      "pty": "https://0f614c72ee71429085fe24d9b2cd89df--pty.ap-singapore.cloudstudio.club"
     }
   },
   "config": {
-    "api": "https://dd865d412440489ea9384715b5e82363--api.ap-singapore.cloudstudio.club",
-    "pty": "https://dd865d412440489ea9384715b5e82363--pty.ap-singapore.cloudstudio.club",
+    "api": "https://0f614c72ee71429085fe24d9b2cd89df--api.ap-singapore.cloudstudio.club",
+    "pty": "https://0f614c72ee71429085fe24d9b2cd89df--pty.ap-singapore.cloudstudio.club",
     "region": "ap-shanghai",
-    "spaceKey": "dd865d412440489ea9384715b5e82363"
+    "spaceKey": "0f614c72ee71429085fe24d9b2cd89df"
   }
 }

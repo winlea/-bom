@@ -261,17 +261,31 @@ export default function Dimensions() {
       if (Array.isArray(j)) items = j;
       else if (j && Array.isArray(j.items)) items = j.items;
       else if (j && Array.isArray(j.data)) items = j.data;
-      setParts(items);
+      
+      // 根据序号和零件号组合去重，只保留第一个出现的项
+      const uniqueItems = items.filter((item, index, self) => {
+        const partNumber = String(item.part_number ?? item.产品编号 ?? item.part_name ?? item.零件名称 ?? '');
+        const sequence = String(item.sequence ?? item.序号 ?? '');
+        const combination = `${sequence}|${partNumber}`;
+        return self.findIndex(i => {
+          const pNumber = String(i.part_number ?? i.产品编号 ?? i.part_name ?? i.零件名称 ?? '');
+          const pSequence = String(i.sequence ?? i.序号 ?? '');
+          const pCombination = `${pSequence}|${pNumber}`;
+          return pCombination === combination;
+        }) === index;
+      });
+      
+      setParts(uniqueItems);
       // 校验当前已选零件是否仍存在于此项目；不存在或为空则预选第一项
       const current = (partNumber || '').trim();
       const exists =
-        Array.isArray(items) &&
-        items.some((it: any) => {
+        Array.isArray(uniqueItems) &&
+        uniqueItems.some((it: any) => {
           const v = String(it.part_number ?? it.产品编号 ?? it.part_name ?? it.零件名称 ?? '');
           return v === current;
         });
       if (!current || !exists) {
-        const first: any = items[0] || {};
+        const first: any = uniqueItems[0] || {};
         const pn = String(
           first.part_number ?? first.产品编号 ?? first.part_name ?? first.零件名称 ?? ''
         );

@@ -143,21 +143,6 @@ export default function PartsPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    const q = getQueryParam('project_id');
-    if (q && /^\d+$/.test(q)) {
-      setSelectedProject(q);
-    }
-  }, [location.search]);
-
-  useEffect(() => {
-    if (selectedProject) fetchParts(selectedProject);
-  }, [selectedProject]);
-
   async function loadProjects() {
     try {
       const r = await fetch('/api/projects');
@@ -167,25 +152,71 @@ export default function PartsPage() {
       else if (j && Array.isArray(j.items)) items = j.items;
       else if (j && Array.isArray(j.data)) items = j.data;
       setProjects(items);
-      if (!selectedProject && items.length > 0) {
+      
+      // 获取URL中的project_id
+      const urlProjectId = getQueryParam('project_id');
+      
+      // 如果URL中有project_id，使用它
+      if (urlProjectId && /^\d+$/.test(urlProjectId)) {
+        setSelectedProject(urlProjectId);
+      } 
+      // 如果URL中没有project_id但也没有选中项目，选择第一个项目
+      else if (!selectedProject && items.length > 0) {
         setSelectedProject(String(items[0].id));
       }
     } catch (e) {
+      console.error('Error loading projects:', e);
       setProjects([]);
     }
   }
 
+  useEffect(() => {
+    // 首先处理URL参数
+    const q = getQueryParam('project_id');
+    if (q && /^\d+$/.test(q)) {
+      setSelectedProject(q);
+    }
+    // 然后加载项目列表
+    loadProjects();
+  }, []);
+
+  useEffect(() => {
+    // 当URL参数变化时更新选中的项目
+    const q = getQueryParam('project_id');
+    if (q && /^\d+$/.test(q)) {
+      setSelectedProject(q);
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (selectedProject) {
+      console.log('Fetching parts for project:', selectedProject);
+      fetchParts(selectedProject);
+    }
+  }, [selectedProject]);
+
   async function fetchParts(projectId: string) {
     setLoading(true);
     try {
+      console.log('Making request to:', `/api/parts?project_id=${projectId}`);
       const r = await fetch(`/api/parts?project_id=${projectId}`);
       const j = await r.json().catch(() => null);
+      console.log('Response:', j);
+      
+      // 后端API返回格式是 {"items": [...]}
       let items: any[] = [];
-      if (Array.isArray(j)) items = j;
-      else if (j && Array.isArray(j.items)) items = j.items;
-      else if (j && Array.isArray(j.data)) items = j.data;
+      if (j && Array.isArray(j.items)) {
+        items = j.items;
+      } else if (Array.isArray(j)) {
+        items = j;
+      } else if (j && Array.isArray(j.data)) {
+        items = j.data;
+      }
+      
+      console.log('Setting parts:', items);
       setParts(items);
     } catch (e) {
+      console.error('Error fetching parts:', e);
       setParts([]);
     } finally {
       setLoading(false);
@@ -193,6 +224,7 @@ export default function PartsPage() {
   }
 
   function handleProjectChange(v: string) {
+    console.log('Changing project to:', v);
     setSelectedProject(v);
     navigate(`/parts?project_id=${v}`, { replace: true });
   }
@@ -208,7 +240,7 @@ export default function PartsPage() {
 
   const columns = useMemo(
     () => [
-      { key: 'seq', label: '序号', render: (pt: Part) => pt.sequence ?? (pt as any).序号 ?? '-' },
+      { key: 'seq', label: '序号', render: (pt: Part) => (pt as any).generatedSequence ?? pt.sequence ?? (pt as any).序号 ?? '-' },
       {
         key: 'assembly_level',
         label: '装配等级',
@@ -284,7 +316,55 @@ export default function PartsPage() {
           return s || '-';
         },
       },
-      { key: 'image', label: '零件简图', render: (pt: Part) => <ImageThumb part={pt} /> },
+      { 
+        key: 'image', 
+        label: '图片', 
+        render: (pt: Part) => {
+          const partId = pt.id;
+          const imageUrl = pt.image_url;
+          const hasImage = pt.has_image;
+          
+          if (!partId) return <div className="text-gray-400">无图片</div>;
+          
+          // 如果有图片URL，直接显示
+          if (imageUrl) {
+            return (
+              <div className="w-12 h-12">
+                <img 
+                  src={imageUrl} 
+                  alt="零件图片" 
+                  className="w-full h-full object-cover rounded"
+                  onError={(e) => {
+                    // 图片加载失败时显示占位符
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMxOS41ODE3IDMyIDE2IDI4LjQxODMgMTYgMjRDMTYgMTkuNTgxNyAxOS41ODE3IDE2IDI0IDE2QzI4LjQxODMgMTYgMzIgMTkuNTgxNyAzMiAyNEMzMiAyOC40MTgzIDI4LjQxODMgMzIgMjQgMzJaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo=';
+                  }}
+                />
+              </div>
+            );
+          }
+          
+          // 如果没有图片URL但有has_image标记，尝试通过API获取
+          if (hasImage) {
+            const apiImageUrl = `/api/parts/${partId}/image`;
+            return (
+              <div className="w-12 h-12">
+                <img 
+                  src={apiImageUrl} 
+                  alt="零件图片" 
+                  className="w-full h-full object-cover rounded"
+                  onError={(e) => {
+                    // 图片加载失败时显示占位符
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMxOS41ODE3IDMyIDE2IDI4LjQxODMgMTYgMjRDMTYgMTkuNTgxNyAxOS41ODE3IDE2IDI0IDE2QzI4LjQxODMgMTYgMzIgMTkuNTgxNyAzMiAyNEMzMiAyOC40MTgzIDI4LjQxODMgMzIgMjQgMzJaIiBmaWxsPSIjOUNBM0FGIi8+Cjwvc3ZnPgo=';
+                  }}
+                />
+              </div>
+            );
+          }
+          
+          // 没有图片
+          return <div className="text-gray-400">无图片</div>;
+        } 
+      },
       {
         key: 'part_name',
         label: '零件名称',
@@ -321,12 +401,24 @@ export default function PartsPage() {
       {
         key: 'final_material_cn',
         label: '终审拟代材料',
-        render: (pt: Part) =>
-          (pt as any).final_material_cn ??
-          (pt as any)['终审拟代材料（中国标准）'] ??
-          (pt as any)['终审拟代材料'] ??
-          (pt as any)['中国标准'] ??
-          '-',
+        render: (pt: Part) => {
+          // 添加调试信息
+          console.log('=== 终审拟代材料调试信息 ===');
+          console.log('Part data for final_material_cn:', pt);
+          console.log('final_material_cn value:', (pt as any).final_material_cn);
+          console.log('终审拟代材料（中国标准） value:', (pt as any)['终审拟代材料（中国标准）']);
+          
+          const value = 
+            (pt as any).final_material_cn ??
+            (pt as any)['终审拟代材料（中国标准）'] ??
+            (pt as any)['终审拟代材料'] ??
+            (pt as any)['中国标准'] ??
+            '-';
+          
+          console.log('Final value:', value);
+          console.log('=== 调试信息结束 ===');
+          return value;
+        },
       },
       {
         key: 'category',
@@ -348,10 +440,131 @@ export default function PartsPage() {
     [navigate, selectedProject, projects]
   );
 
+  // 处理零件数据：去重、生成序号、排序
+  const processedParts = useMemo(() => {
+    // 1. 去重：根据序号和零件号组合去重，保留第一个出现的项
+    const uniqueParts = parts.filter((part, index, self) => {
+      const partNumber = String(part.part_number || (part as any).产品编号 || '').trim();
+      const sequence = String(part.sequence || (part as any).序号 || '').trim();
+      
+      // 检查是否有相同序号和零件号组合的项已经在列表中
+      const firstIndex = self.findIndex(p => {
+        const pNumber = String(p.part_number || (p as any).产品编号 || '').trim();
+        const pSequence = String(p.sequence || (p as any).序号 || '').trim();
+        return pNumber === partNumber && pSequence === sequence;
+      });
+      
+      // 只保留第一次出现的项
+      return firstIndex === index;
+    });
+
+    // 2. 按照BOM表中的行列顺序严格排序：先按assembly_level，再按bom_sort
+    const sortedParts = [...uniqueParts].sort((a, b) => {
+      // 首先按序号排序（如果有序号的话）
+      const seqA = a.sequence || (a as any).序号 || '';
+      const seqB = b.sequence || (b as any).序号 || '';
+      
+      // 如果两个都有序号，按序号排序
+      if (seqA && seqB) {
+        // 将序号转换为数字数组进行比较，例如 "1.2.3" -> [1, 2, 3]
+        const partsA = seqA.split('.').map(Number);
+        const partsB = seqB.split('.').map(Number);
+        
+        // 逐级比较
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const partA = partsA[i] || 0;
+          const partB = partsB[i] || 0;
+          if (partA !== partB) {
+            return partA - partB;
+          }
+        }
+        // 如果序号完全相同，则按part_number排序
+        const partA = a.part_number || (a as any).产品编号 || '';
+        const partB = b.part_number || (b as any).产品编号 || '';
+        return partA.localeCompare(partB);
+      }
+      
+      // 如果只有一个有序号，有序号的排在前面
+      if (seqA) return -1;
+      if (seqB) return 1;
+      
+      // 如果都没有序号，按照assembly_level和bom_sort排序
+      // 首先按装配等级排序
+      const levelA = a.assembly_level ?? (a as any).装配等级 ?? (a as any).level ?? 1;
+      const levelB = b.assembly_level ?? (b as any).装配等级 ?? (b as any).level ?? 1;
+      
+      if (levelA !== levelB) {
+        return levelA - levelB;
+      }
+      
+      // 然后严格按照bom_sort排序，这是BOM表中的行列顺序
+      const sortA = a.bom_sort ?? 0;
+      const sortB = b.bom_sort ?? 0;
+      
+      if (sortA !== sortB) {
+        return sortA - sortB;
+      }
+      
+      // 如果assembly_level和bom_sort都相同，则按part_number排序
+      const partA = a.part_number || (a as any).产品编号 || '';
+      const partB = b.part_number || (b as any).产品编号 || '';
+      
+      return partA.localeCompare(partB);
+    });
+
+    // 3. 生成序号（只对序号为空的项）
+    const levelCounters: { [key: number]: number } = {};
+    const parentMap: { [key: number]: string } = {};
+    
+    const partsWithSequence = sortedParts.map(part => {
+      const level = part.assembly_level ?? (part as any).装配等级 ?? (part as any).level ?? 1;
+      const existingSequence = part.sequence || (part as any).序号 || '';
+      
+      // 如果已有序号，直接使用
+      if (existingSequence.trim() !== '') {
+        return {
+          ...part,
+          generatedSequence: existingSequence
+        };
+      }
+      
+      // 没有序号，需要生成
+      // 初始化当前层级的计数器
+      if (!levelCounters[level]) {
+        levelCounters[level] = 0;
+      }
+      
+      // 增加当前层级的计数器
+      levelCounters[level]++;
+      
+      // 生成序号
+      let sequence = '';
+      if (level === 1) {
+        sequence = String(levelCounters[level]);
+      } else {
+        // 找到父级序号
+        const parentLevel = level - 1;
+        const parentSequence = parentMap[parentLevel] || '1';
+        sequence = `${parentSequence}.${levelCounters[level]}`;
+      }
+      
+      // 保存当前序号作为下一级的父级
+      parentMap[level] = sequence;
+      
+      // 更新零件的序号
+      return {
+        ...part,
+        generatedSequence: sequence
+      };
+    });
+
+    return partsWithSequence;
+  }, [parts]);
+
   const filtered = useMemo(() => {
-    if (!search) return parts;
+    if (!search) return processedParts;
     const s = search.toLowerCase();
-    return parts.filter(pt => {
+    return processedParts.filter(pt => {
       const values = [
         pt.part_number,
         pt.part_name,
@@ -379,9 +592,10 @@ export default function PartsPage() {
       ].map(x => String(x || '').toLowerCase());
       return values.some(f => f.includes(s));
     });
-  }, [parts, search]);
+  }, [processedParts, search]);
 
   const sorted = useMemo(() => {
+    // 如果没有指定排序字段，直接返回过滤后的数据（已经按BOM层级排序）
     if (!sortField) return filtered;
 
     return [...filtered].sort((a, b) => {
@@ -390,8 +604,9 @@ export default function PartsPage() {
       // 根据字段获取值
       switch (sortField) {
         case 'seq':
-          valueA = a.sequence ?? (a as any).序号 ?? '';
-          valueB = b.sequence ?? (b as any).序号 ?? '';
+          // 使用生成的序号进行排序
+          valueA = (a as any).generatedSequence ?? a.sequence ?? (a as any).序号 ?? '';
+          valueB = (b as any).generatedSequence ?? b.sequence ?? (b as any).序号 ?? '';
           break;
         case 'assembly_level':
           valueA = (a as any).assembly_level ?? (a as any).装配等级 ?? (a as any).level ?? '';

@@ -77,17 +77,19 @@ export default function ProjectsPage() {
               parts = partsData.data;
             }
 
-            // 去重计算零件数量（根据part_number字段）
-            const uniquePartNumbers = new Set<string>();
+            // 去重计算零件数量（根据序号和零件号组合）
+            const uniqueCombinations = new Set<string>();
             (parts as any[]).forEach((part: any) => {
               if (part?.part_number) {
-                uniquePartNumbers.add(String(part.part_number));
+                const sequence = String(part.sequence || '');
+                const combination = `${sequence}|${String(part.part_number)}`;
+                uniqueCombinations.add(combination);
               }
             });
 
             return {
               ...project,
-              parts_count: uniquePartNumbers.size,
+              parts_count: uniqueCombinations.size,
             };
           } catch (e) {
             console.error(`获取项目 ${project.id} 的零件数量失败:`, e);

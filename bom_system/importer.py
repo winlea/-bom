@@ -46,6 +46,7 @@ HEADER_SYNONYMS = {
     "原图材料": "original_material",
     "终审拟代材料（中国标准）": "final_material_cn",
     "终审拟代材料(中国标准)": "final_material_cn",
+    "终审拟代材料": "final_material_cn",  # 添加这个映射
     "零件分类": "part_category",
     "产品净重KG/PCS": "net_weight_kg",
 }

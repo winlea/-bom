@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>去重逻辑测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #ffdddd;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>BOM去重逻辑测试</h1>
+    
+    <div id="loading" class="info">加载数据中...</div>
+    <div id="results"></div>
+
+    <script>
+        async function fetchData() {
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+            
+            try {
+                // 获取项目3的数据
+                const response3 = await fetch('http://localhost:5000/api/parts?project_id=3');
+                const data3 = await response3.json();
+                const parts3 = data3.items || [];
+                
+                // 获取项目11的数据
+                const response11 = await fetch('http://localhost:5000/api/parts?project_id=11');
+                const data11 = await response11.json();
+                const parts11 = data11.items || [];
+                
+                // 隐藏加载提示
+                loadingDiv.style.display = 'none';
+                
+                // 显示项目3的结果
+                resultsDiv.innerHTML += '<h2>项目3 (ID: 3)</h2>';
+                resultsDiv.innerHTML += `<p>总零件数: ${parts3.length}</p>`;
+                
+                // 检查序号+零件号组合
+                const combinations3 = {};
+                parts3.forEach(part => {
+                    const partNumber = part.part_number || '';
+                    const sequence = part.sequence || '';
+                    const combination = `${sequence}|${partNumber}`;
+                    
+                    if (!combinations3[combination]) {
+                        combinations3[combination] = [];
+                    }
+                    combinations3[combination].push(part);
+                });
+                
+                const duplicateCombinations3 = Object.keys(combinations3).filter(key => combinations3[key].length > 1);
+                
+                resultsDiv.innerHTML += `<p>唯一序号+零件号组合数: ${Object.keys(combinations3).length}</p>`;
+                resultsDiv.innerHTML += `<p>重复组合数: ${duplicateCombinations3.length}</p>`;
+                
+                if (duplicateCombinations3.length === 0) {
+                    resultsDiv.innerHTML += '<p class="success">✓ 没有重复的序号+零件号组合</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p class="error">✗ 发现重复的序号+零件号组合</p>';
+                }
+                
+                // 显示项目3的零件表格
+                resultsDiv.innerHTML += '<h3>项目3零件列表</h3>';
+                resultsDiv.innerHTML += '<table><tr><th>ID</th><th>零件号</th><th>零件名称</th><th>序号</th></tr>';
+                parts3.forEach(part => {
+                    resultsDiv.innerHTML += `<tr>
+                        <td>${part.id}</td>
+                        <td>${part.part_number || ''}</td>
+                        <td>${part.part_name || ''}</td>
+                        <td>${part.sequence || ''}</td>
+                    </tr>`;
+                });
+                resultsDiv.innerHTML += '</table>';
+                
+                // 显示项目11的结果
+                resultsDiv.innerHTML += '<h2>项目11 (ID: 11)</h2>';
+                resultsDiv.innerHTML += `<p>总零件数: ${parts11.length}</p>`;
+                
+                // 检查序号+零件号组合
+                const combinations11 = {};
+                parts11.forEach(part => {
+                    const partNumber = part.part_number || '';
+                    const sequence = part.sequence || '';
+                    const combination = `${sequence}|${partNumber}`;
+                    
+                    if (!combinations11[combination]) {
+                        combinations11[combination] = [];
+                    }
+                    combinations11[combination].push(part);
+                });
+                
+                const duplicateCombinations11 = Object.keys(combinations11).filter(key => combinations11[key].length > 1);
+                
+                resultsDiv.innerHTML += `<p>唯一序号+零件号组合数: ${Object.keys(combinations11).length}</p>`;
+                resultsDiv.innerHTML += `<p>重复组合数: ${duplicateCombinations11.length}</p>`;
+                
+                if (duplicateCombinations11.length === 0) {
+                    resultsDiv.innerHTML += '<p class="success">✓ 没有重复的序号+零件号组合</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p class="error">✗ 发现重复的序号+零件号组合</p>';
+                }
+                
+                // 显示项目11的零件表格
+                resultsDiv.innerHTML += '<h3>项目11零件列表</h3>';
+                resultsDiv.innerHTML += '<table><tr><th>ID</th><th>零件号</th><th>零件名称</th><th>序号</th></tr>';
+                parts11.forEach(part => {
+                    const partNumber = part.part_number || '';
+                    const sequence = part.sequence || '';
+                    const combination = `${sequence}|${partNumber}`;
+                    const isDuplicate = combinations11[combination].length > 1;
+                    
+                    resultsDiv.innerHTML += `<tr ${isDuplicate ? 'class="highlight"' : ''}>
+                        <td>${part.id}</td>
+                        <td>${partNumber}</td>
+                        <td>${part.part_name || ''}</td>
+                        <td>${sequence}</td>
+                    </tr>`;
+                });
+                resultsDiv.innerHTML += '</table>';
+                
+                // 检查项目11中相同零件号但不同序号的情况
+                const partNumbers11 = {};
+                parts11.forEach(part => {
+                    const partNumber = part.part_number || '';
+                    if (!partNumbers11[partNumber]) {
+                        partNumbers11[partNumber] = [];
+                    }
+                    partNumbers11[partNumber].push(part);
+                });
+                
+                const duplicatePartNumbers11 = Object.keys(partNumbers11).filter(key => partNumbers11[key].length > 1);
+                
+                if (duplicatePartNumbers11.length > 0) {
+                    resultsDiv.innerHTML += '<h3>项目11中相同零件号但不同序号的零件</h3>';
+                    resultsDiv.innerHTML += '<table><tr><th>零件号</th><th>出现次数</th><th>序号列表</th></tr>';
+                    
+                    duplicatePartNumbers11.forEach(partNumber => {
+                        const parts = partNumbers11[partNumber];
+                        const sequences = parts.map(p => p.sequence || '').join(', ');
+                        
+                        resultsDiv.innerHTML += `<tr>
+                            <td>${partNumber}</td>
+                            <td>${parts.length}</td>
+                            <td>${sequences}</td>
+                        </tr>`;
+                    });
+                    
+                    resultsDiv.innerHTML += '</table>';
+                    resultsDiv.innerHTML += '<p class="info">注意：这些零件虽然零件号相同，但序号不同，按照新的去重逻辑不会被去重。</p>';
+                }
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<p class="error">获取数据失败: ${error.message}</p>`;
+                console.error('Error fetching data:', error);
+            }
+        }
+        
+        // 页面加载完成后获取数据
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
