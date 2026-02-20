@@ -14,7 +14,7 @@ from . import bp
 # CRUD for projects
 
 
-@bp.get("/api/projects")
+@bp.get("/projects")
 def list_projects():
     items = Project.query.order_by(Project.created_at.desc()).all()
     return jsonify(
@@ -33,52 +33,96 @@ def list_projects():
     )
 
 
-@bp.post("/api/projects")
+@bp.post("/projects")
 def create_project():
-    data = request.get_json(force=True)
-    name = (data.get("name") or "").strip()
-    if not name:
-        return jsonify({"error": "name required"}), 400
-    desc = (data.get("description") or "").strip() or None
-    p = Project(name=name, description=desc)
-    db.session.add(p)
-    db.session.commit()
-    return jsonify({"id": p.id, "name": p.name, "description": p.description})
+    try:
+        print('收到创建项目请求...')
+        
+        data = request.get_json(force=True)
+        print(f'请求数据: {data}')
+        
+        if not data:
+            print('请求体为空')
+            return jsonify({"error": "request body required", "details": "请求体不能为空"}), 400
+        
+        name = (data.get("name") or "").strip()
+        print(f'项目名称: {name}')
+        
+        if not name:
+            print('项目名称为空')
+            return jsonify({"error": "name required", "details": "项目名称不能为空"}), 400
+        
+        desc = (data.get("description") or "").strip() or None
+        print(f'项目描述: {desc}')
+        
+        # 检查数据库连接
+        print('检查数据库连接...')
+        try:
+            # 测试数据库会话
+            test_query = db.session.query(Project).limit(1)
+            print(f'数据库会话测试: {test_query}')
+        except Exception as db_test_error:
+            print(f'数据库会话测试失败: {db_test_error}')
+        
+        p = Project(name=name, description=desc)
+        print(f'创建项目对象: {p}')
+        
+        db.session.add(p)
+        print('添加项目到会话')
+        
+        print('提交数据库事务...')
+        db.session.commit()
+        print(f'项目创建成功，ID: {p.id}')
+        
+        return jsonify({"id": p.id, "name": p.name, "description": p.description})
+    except Exception as e:
+        print(f'创建项目失败: {e}')
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({"error": "create project failed", "details": f"创建项目时发生错误: {str(e)}"}), 500
 
 
-@bp.delete("/api/projects/<int:pid>")
+@bp.delete("/projects/<int:pid>")
 def delete_project(pid: int):
-    p = db.session.get(Project, pid)
-    if not p:
-        return jsonify({"error": "not found"}), 404
-    db.session.delete(p)
-    db.session.commit()
-    return jsonify({"status": "success"})
+    try:
+        p = db.session.get(Project, pid)
+        if not p:
+            return jsonify({"error": "not found", "details": f"项目ID {pid} 不存在"}), 404
+        db.session.delete(p)
+        db.session.commit()
+        return jsonify({"status": "success", "message": "项目删除成功"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "delete failed", "details": f"删除项目时发生错误: {str(e)}"}), 500
 
 
-@bp.get("/api/projects/<int:pid>")
+@bp.get("/projects/<int:pid>")
 def get_project(pid: int):
     """
     返回单个项目详情，供前端按项目 id 请求使用。
     """
-    p = db.session.get(Project, pid)
-    if not p:
-        return jsonify({"error": "not found"}), 404
-    return jsonify(
-        {
-            "id": p.id,
-            "name": p.name,
-            "description": getattr(p, "description", None),
-            "status": getattr(p, "status", None),
-            "created_at": (
-                p.created_at.isoformat() if getattr(p, "created_at", None) else None
-            ),
-        }
-    )
+    try:
+        p = db.session.get(Project, pid)
+        if not p:
+            return jsonify({"error": "not found", "details": f"项目ID {pid} 不存在"}), 404
+        return jsonify(
+            {
+                "id": p.id,
+                "name": p.name,
+                "description": getattr(p, "description", None),
+                "status": getattr(p, "status", None),
+                "created_at": (
+                    p.created_at.isoformat() if getattr(p, "created_at", None) else None
+                ),
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": "fetch failed", "details": f"获取项目详情时发生错误: {str(e)}"}), 500
 
 
 # Dashboard summary & recent
-@bp.get("/api/dashboard/summary")
+@bp.get("/dashboard/summary")
 def dashboard_summary():
     project_count = db.session.query(func.count(Project.id)).scalar() or 0
     parts_count = db.session.query(func.count(BomTable.id)).scalar() or 0
@@ -101,7 +145,7 @@ def dashboard_summary():
     )
 
 
-@bp.get("/api/dashboard/recent")
+@bp.get("/dashboard/recent")
 def dashboard_recent():
     recent_projects = Project.query.order_by(Project.created_at.desc()).limit(5).all()
     recent_imports = (
@@ -134,7 +178,7 @@ def dashboard_recent():
     )
 
 
-@bp.post("/api/projects/<int:pid>/import")
+@bp.post("/projects/<int:pid>/import")
 def import_project_bom(pid: int):
     """
     接收项目级别的 BOM 导入文件（multipart/form-data）
@@ -201,7 +245,7 @@ def import_project_bom(pid: int):
 
 
 # 新增：查询指定 import log 的详情
-@bp.get("/api/imports/<int:import_id>")
+@bp.get("/imports/<int:import_id>")
 def get_import_log(import_id: int):
     il = db.session.get(ImportLog, import_id)
     if not il:
@@ -245,11 +289,13 @@ def _find_uploaded_file_for_import(import_log: ImportLog) -> Optional[str]:
 
 
 # 新增：触发对指定 import_log 的同步处理（仅用于开发或手动联调）
-@bp.post("/api/imports/<int:import_id>/process")
+@bp.post("/imports/<int:import_id>/process")
 def process_import_log(import_id: int):
     il = db.session.get(ImportLog, import_id)
     if not il:
         return jsonify({"error": "import log not found"}), 404
+
+    print(f"DEBUG: ImportLog record: id={il.id}, project_id={il.project_id}, filename={il.filename}")
 
     # 找到上传文件
     file_path = _find_uploaded_file_for_import(il)
@@ -270,14 +316,17 @@ def process_import_log(import_id: int):
             data = fh.read()
         lower = file_path.lower()
         if lower.endswith(".csv"):
+            print(f"DEBUG: Calling import_csv with project_id={il.project_id}")
             result = importer.import_csv(data, project_id=il.project_id)
         else:
             # 其他按 xlsx 处理（openpyxl 支持 xlsx）
             try:
+                print(f"DEBUG: Calling import_xlsx with project_id={il.project_id}")
                 result = importer.import_xlsx(data, project_id=il.project_id)
             except Exception as e:
                 # 如果 xlsx 解析失败，尝试 csv 解析（兼容性）
                 try:
+                    print(f"DEBUG: Calling import_csv (fallback) with project_id={il.project_id}")
                     result = importer.import_csv(data, project_id=il.project_id)
                 except Exception as e2:
                     raise Exception(f"failed to import file as xlsx or csv: {e} / {e2}")

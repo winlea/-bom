@@ -7,10 +7,10 @@ load_dotenv()
 
 # Basic configuration with environment overrides
 
-# MySQL DSN, default per user's spec (root/123456)
+# SQLite DSN as fallback
 SQLALCHEMY_DATABASE_URI = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://root:123456@localhost:3306/bom_db",
+    "sqlite:///bom_db.sqlite",
 )
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False

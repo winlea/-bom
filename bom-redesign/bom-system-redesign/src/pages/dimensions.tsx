@@ -597,18 +597,24 @@ export default function Dimensions() {
       return;
     }
 
+    console.log('开始删除尺寸，ID:', id);
     setLoading(true);
     try {
       // 使用删除重排序API
-      const response = await fetch(
-        `http://localhost:5000/api/dimensions/${id}/delete-with-reorder`,
-        {
-          method: 'DELETE',
-        }
-      );
+      const url = `http://localhost:5000/api/dimensions/${id}/delete-with-reorder`;
+      console.log('删除尺寸的URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+      });
 
+      console.log('删除尺寸的响应状态码:', response.status);
+      console.log('删除尺寸的响应状态:', response.statusText);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log('删除尺寸的响应数据:', result);
+        
         if (result.success) {
           // 删除成功后重新获取数据
           await fetchDimensions();
@@ -617,7 +623,15 @@ export default function Dimensions() {
           alert(`删除失败: ${result.message}`);
         }
       } else {
-        alert('删除失败，请检查网络连接');
+        // 尝试获取错误响应的内容
+        try {
+          const errorData = await response.json();
+          console.log('删除尺寸的错误响应:', errorData);
+          alert(`删除失败: ${errorData.message || '网络错误'}`);
+        } catch (e) {
+          console.error('无法解析错误响应:', e);
+          alert('删除失败，请检查网络连接');
+        }
       }
     } catch (error) {
       console.error('删除尺寸失败:', error);

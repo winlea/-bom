@@ -2,8 +2,8 @@ from flask import Flask, render_template
 from flask_cors import CORS
 
 from bom_system.admin import admin_bp
-from bom_system.api import api_bp
-from bom_system.config import SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
+from bom_system.api_main import api_bp
+from bom_system.config.manager import ConfigManager
 from bom_system.dimensions.api import dimensions_bp
 from bom_system.dimensions.image_api import dimension_image_bp
 from bom_system.models import db
@@ -15,6 +15,11 @@ from bom_system.models import db
 # from bom_system.ods.enhanced_wz1d_api import enhanced_wz1d_bp
 from bom_system.parts import bp as parts_bp
 from bom_system.projects import bp as projects_bp
+
+# Initialize config manager
+config_manager = ConfigManager()
+SQLALCHEMY_DATABASE_URI = config_manager.get('DATABASE_URL', 'sqlite:///bom_db.sqlite')
+SQLALCHEMY_TRACK_MODIFICATIONS = config_manager.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
 
 def create_app() -> Flask:
@@ -35,10 +40,10 @@ def create_app() -> Flask:
     CORS(
         app,
         origins=[
-            "http://localhost:5174",
-            "http://127.0.0.1:5174",
             "http://localhost:5173",
             "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
             "http://localhost:5175",
             "http://127.0.0.1:5175",
             "http://localhost:5176",
@@ -52,7 +57,7 @@ def create_app() -> Flask:
     app.register_blueprint(api_bp)
     app.register_blueprint(parts_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(projects_bp)
+    app.register_blueprint(projects_bp, url_prefix="/api")
     app.register_blueprint(dimensions_bp)
     app.register_blueprint(dimension_image_bp)
     # app.register_blueprint(ods_bp)

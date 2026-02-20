@@ -2,7 +2,6 @@ from datetime import datetime
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.mysql import LONGBLOB
 
 # Simple DB init pattern; app factory will init with app
 
@@ -13,9 +12,17 @@ db = SQLAlchemy()
 def import_all_models():
     """导入所有模型以确保它们被SQLAlchemy识别"""
     try:
+        print('导入 Dimension 模型...')
         from bom_system.dimensions.models import Dimension
-    except ImportError:
-        pass
+        print('Dimension 模型导入成功!')
+    except ImportError as e:
+        print(f'Dimension 模型导入失败: {e}')
+        import traceback
+        traceback.print_exc()
+    # 确保当前文件中的模型也被识别
+    # Project, BomTable, ImportLog 等模型已经在当前文件中定义
+    # SQLAlchemy会自动识别它们
+    pass
 
 
 class Project(db.Model):
@@ -78,7 +85,7 @@ class BomTable(db.Model):
     # 图号与图片
     drawing_2d = db.Column(db.String(100))  # 2D 图号
     drawing_3d = db.Column(db.String(100))  # 3D 图号
-    image_data = db.Column(LONGBLOB)  # 零件简图
+    image_data = db.Column(db.LargeBinary)  # 零件简图
     image_url = db.Column(db.Text)
 
     # 材料与分类

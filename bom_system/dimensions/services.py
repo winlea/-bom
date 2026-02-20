@@ -102,48 +102,90 @@ class DimensionService:
         return (max_group or 0) + 1
 
     def validate_dimension_data(self, data: Dict[str, Any]) -> None:
-        """验证尺寸数据"""
-        # 如果是图片尺寸，只需要验证图片URL和特性
-        if data.get("dimensionType") in ["image", "image_dimension"]:
+        """验证尺寸数据（符合ISO 1101-2004标准）"""
+        # 验证尺寸类型
+        dimension_type = data.get("dimensionType", "").strip()
+        if not dimension_type:
+            raise DimensionValidationError("[尺寸类型] 不能为空")
+
+        # 验证尺寸类型是否有效
+        valid_dimension_types = [
+            "linear", "angular", "radial", "diameter", "position", "profile", "runout", 
+            "total_runout", "flatness", "straightness", "circularity", "cylindricity", 
+            "perpendicularity", "parallelism", "angularity", "image", "image_dimension"
+        ]
+        if dimension_type not in valid_dimension_types:
+            raise DimensionValidationError(f"[尺寸类型] 无效。有效值为：{', '.join(valid_dimension_types)}（符合ISO 1101-2004标准）")
+
+        # 如果是图片尺寸，只需要验证图片URL
+        if dimension_type in ["image", "image_dimension"]:
             if not data.get("imageUrl"):
-                raise DimensionValidationError("图片尺寸必须包含图片URL")
-            if not data.get("characteristic", "").strip():
-                raise DimensionValidationError("图片尺寸必须包含特殊特性")
+                raise DimensionValidationError("[图片URL] 不能为空，图片尺寸必须包含图片URL")
+            # 图片尺寸设置默认名义值，因为模型中该字段为必填
+            if not data.get("nominalValue"):
+                data["nominalValue"] = "0"
             return
 
         # 对于普通尺寸，验证名义值
         nominal_value = data.get("nominalValue", "").strip()
         if not nominal_value:
-            raise DimensionValidationError("名义值不能为空")
+            raise DimensionValidationError("[名义值] 不能为空")
 
         # 验证数值格式
         try:
             float(nominal_value)
         except ValueError:
-            raise DimensionValidationError("名义值必须是有效数字")
+            raise DimensionValidationError(f"[名义值] 必须是有效数字，当前值: '{nominal_value}'")
 
-        # 验证公差值
+        # 验证公差值（符合ISO 1101-2004标准）
         upper_tolerance = data.get("upperTolerance", "").strip()
         lower_tolerance = data.get("lowerTolerance", "").strip()
         tolerance_value = data.get("toleranceValue", "").strip()
 
+        # 公差值可以为0，根据用户需求调整
+        # ISO 1101-2004标准通常建议公差值为正数，但不强制要求
+        if tolerance_value:
+            try:
+                tolerance = float(tolerance_value)
+                if tolerance < 0:
+                    raise DimensionValidationError(f"[公差值] 不能为负数，当前值: '{tolerance_value}'")
+            except ValueError:
+                raise DimensionValidationError(f"[公差值] 必须是有效数字，当前值: '{tolerance_value}'")
+
+        # ISO 1101-2004要求：上公差必须大于或等于下公差
+        if upper_tolerance and lower_tolerance:
+            try:
+                upper = float(upper_tolerance)
+                lower = float(lower_tolerance)
+                if upper < lower:
+                    raise DimensionValidationError(f"[公差值] 上公差必须大于或等于下公差（符合ISO 1101-2004标准），当前值: 上公差='{upper_tolerance}', 下公差='{lower_tolerance}'")
+            except ValueError:
+                raise DimensionValidationError(f"[公差值] 必须是有效数字，当前值: 上公差='{upper_tolerance}', 下公差='{lower_tolerance}'")
+
+        # 验证单个公差值格式
         if upper_tolerance:
             try:
                 float(upper_tolerance)
             except ValueError:
-                raise DimensionValidationError("上公差必须是有效数字")
+                raise DimensionValidationError(f"[上公差] 必须是有效数字，当前值: '{upper_tolerance}'")
 
         if lower_tolerance:
             try:
                 float(lower_tolerance)
             except ValueError:
-                raise DimensionValidationError("下公差必须是有效数字")
+                raise DimensionValidationError(f"[下公差] 必须是有效数字，当前值: '{lower_tolerance}'")
 
-        if tolerance_value:
-            try:
-                float(tolerance_value)
-            except ValueError:
-                raise DimensionValidationError("公差值必须是有效数字")
+        # ISO 1101-2004要求：验证基准符号格式
+        datum = data.get("datum", "").strip()
+        if datum:
+            # 基准符号应该是大写字母，可选数字后缀
+            import re
+            if not re.match(r'^[A-Z][0-9]*$', datum):
+                raise DimensionValidationError(f"[基准符号] 必须是大写字母，可选数字后缀（符合ISO 1101-2004标准），当前值: '{datum}'")
+
+        # 特殊特性可以为空，根据用户需求调整
+        # ISO 1101-2004标准建议添加特殊特性，但不强制要求
+        characteristic = data.get("characteristic", "").strip()
 
     def create_dimension(self, project_id: str, data: Dict[str, Any]) -> Dimension:
         """创建尺寸"""
@@ -326,7 +368,10 @@ class DimensionService:
 
         except Exception as e:
             self.session.rollback()
-            raise e
+            print(f"删除尺寸失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def save_dimension_image(self, file) -> str:
         """保存尺寸图片并返回URL"""

@@ -16,7 +16,7 @@ export default defineConfig({
         target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
+        // 不再移除/api前缀，因为后端API已经配置了/api前缀
       },
       "/uploads": {
         target: "http://localhost:5000",

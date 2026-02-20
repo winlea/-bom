@@ -232,6 +232,12 @@ export default function ImportModal({
       setLoading(true);
       try {
         // 创建新项目
+        console.log('开始创建项目:', {
+          name: newProjectName.trim(),
+          description: newProjectDesc.trim() || undefined
+        });
+        
+        // 使用相对路径，通过vite代理访问
         const createProjectResponse = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -241,13 +247,36 @@ export default function ImportModal({
           }),
         });
 
+        console.log('创建项目响应状态:', createProjectResponse.status);
+        
         if (!createProjectResponse.ok) {
-          setError('创建新项目失败');
+          try {
+            // 读取响应体一次
+            const responseText = await createProjectResponse.text();
+            console.log('创建项目错误响应:', responseText);
+            
+            // 尝试解析为JSON
+            try {
+              const errorData = JSON.parse(responseText);
+              console.log('创建项目错误数据:', errorData);
+              const errorMessage = errorData?.message || errorData?.error || '创建新项目失败';
+              const errorDetails = errorData?.details || errorData?.errors;
+              const errorText = errorDetails ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}` : errorMessage;
+              console.log('创建项目错误:', errorText);
+              setError(errorText);
+            } catch (parseErr) {
+              // 如果不是JSON，直接使用文本
+              setError(`创建新项目失败: ${responseText}`);
+            }
+          } catch (err) {
+            setError(`创建新项目失败: ${err.message || String(err)}`);
+          }
           setLoading(false);
           return;
         }
 
         const projectData = await createProjectResponse.json();
+        console.log('创建项目成功响应:', projectData);
         if (!projectData || (!projectData.id && !projectData.project_id)) {
           setError('创建新项目失败：无法获取项目ID');
           setLoading(false);
@@ -255,7 +284,9 @@ export default function ImportModal({
         }
 
         projectIdToUse = String(projectData.id || projectData.project_id);
+        console.log('获取到项目ID:', projectIdToUse);
       } catch (e: any) {
+        console.log('创建项目异常:', e);
         setError(`创建新项目失败: ${e.message || String(e)}`);
         setLoading(false);
         return;
@@ -341,10 +372,24 @@ export default function ImportModal({
         } else {
           setResultMessage('导入已提交，后台可能仍在处理');
         }
-      } else {
-        const errorText = await response.text();
-        setError(`导入失败：HTTP ${response.status} ${errorText}`);
-      }
+      } else if (!response.ok) {
+          try {
+            // 读取响应体一次
+            const responseText = await response.text();
+            
+            // 尝试解析为JSON
+            try {
+              const errorData = JSON.parse(responseText);
+              const errorMessage = errorData?.message || errorData?.error || `导入失败：HTTP ${response.status}`;
+              const errorDetails = errorData?.details || errorData?.errors;
+              setError(errorDetails ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}` : errorMessage);
+            } catch {
+              setError(`导入失败：HTTP ${response.status} ${responseText}`);
+            }
+          } catch (err) {
+            setError(`导入失败：${err.message || String(err)}`);
+          }
+        }
     } catch (e: any) {
       setError(String(e?.message || e));
     } finally {

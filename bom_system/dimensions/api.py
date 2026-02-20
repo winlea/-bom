@@ -60,9 +60,8 @@ def list_dimensions():
 
 def get_db_session():
     """获取数据库会话"""
-    engine = create_engine(SQLALCHEMY_DATABASE_URI)
-    Session = sessionmaker(bind=engine)
-    return Session()
+    from bom_system.models import db
+    return db.session
 
 
 @dimensions_bp.route("/projects/<project_id>", methods=["GET"])
@@ -207,6 +206,7 @@ def create_dimension(project_id):
         )
 
     except DimensionValidationError as e:
+        logger.error(f"尺寸验证失败: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 400
 
     except Exception as e:
@@ -356,11 +356,11 @@ def insert_dimension_at_position(project_id):
         data = request.get_json()
 
         if not data:
-            return jsonify({"success": False, "message": "请提供尺寸数据"}), 400
+            return jsonify({"success": False, "message": "请提供尺寸数据", "details": "JSON请求体为空或格式无效"}), 400
 
         insert_position = data.get("insertPosition")
         if insert_position is None:
-            return jsonify({"success": False, "message": "请指定插入位置"}), 400
+            return jsonify({"success": False, "message": "请指定插入位置", "details": "insertPosition字段为必填"}), 400
 
         db_session = get_db_session()
         service = DimensionService(db_session)
@@ -419,13 +419,13 @@ def delete_dimension_with_reorder(dimension_id):
         db_session.close()
 
         if not success:
-            return jsonify({"success": False, "message": "尺寸不存在"}), 404
+            return jsonify({"success": False, "message": "尺寸不存在", "details": f"尺寸ID {dimension_id} 不存在或已被删除"}), 404
 
         return jsonify({"success": True, "message": "尺寸删除成功，编号已重新排序"})
 
     except Exception as e:
         logger.error(f"删除尺寸失败: {str(e)}")
-        return jsonify({"success": False, "message": f"删除尺寸失败: {str(e)}"}), 500
+        return jsonify({"success": False, "message": "删除尺寸失败", "details": f"删除过程中发生错误: {str(e)}"}), 500
 
 
 @dimensions_bp.route("/upload-image", methods=["POST"])
@@ -433,11 +433,11 @@ def upload_dimension_image():
     """上传尺寸图片"""
     try:
         if "image" not in request.files:
-            return jsonify({"success": False, "message": "请选择图片文件"}), 400
+            return jsonify({"success": False, "message": "请选择图片文件", "details": "请求中缺少image文件字段"}), 400
 
         file = request.files["image"]
         if file.filename == "":
-            return jsonify({"success": False, "message": "请选择图片文件"}), 400
+            return jsonify({"success": False, "message": "请选择图片文件", "details": "图片文件名不能为空"}), 400
 
         # 检查文件类型
         allowed_extensions = {"png", "jpg", "jpeg", "gif", "bmp", "webp"}
@@ -450,6 +450,7 @@ def upload_dimension_image():
                     {
                         "success": False,
                         "message": "不支持的图片格式，请上传 PNG、JPG、JPEG、GIF、BMP 或 WEBP 格式的图片",
+                        "details": f"当前文件格式: {file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else '未知'}"
                     }
                 ),
                 400,
@@ -642,9 +643,9 @@ def create_image_only_dimension(project_id):
 # 错误处理
 @dimensions_bp.errorhandler(404)
 def not_found(error):
-    return jsonify({"success": False, "message": "接口不存在"}), 404
+    return jsonify({"success": False, "message": "接口不存在", "details": "请求的API端点不存在或已被移除"}), 404
 
 
 @dimensions_bp.errorhandler(500)
 def internal_error(error):
-    return jsonify({"success": False, "message": "服务器内部错误"}), 500
+    return jsonify({"success": False, "message": "服务器内部错误", "details": "服务器处理请求时发生内部错误，请检查服务器日志获取详细信息"}), 500

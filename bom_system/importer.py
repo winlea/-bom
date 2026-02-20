@@ -48,6 +48,7 @@ HEADER_SYNONYMS = {
     "终审拟代材料(中国标准)": "final_material_cn",
     "零件分类": "part_category",
     "产品净重KG/PCS": "net_weight_kg",
+    "净重": "net_weight_kg",
 }
 
 
@@ -81,9 +82,24 @@ def import_csv(file_bytes: bytes, project_id: int | None = None) -> Dict[str, An
     """
     f = TextIOWrapper(BytesIO(file_bytes), encoding="utf-8")
     reader = csv.DictReader(f)
-    headers = {_normalize_header(h): h for h in reader.fieldnames or []}
-    if not REQUIRED_COLS.issubset(headers.keys()):
-        raise ValueError(f"CSV header must include: {', '.join(REQUIRED_COLS)}")
+    
+    # 构建表头映射，支持中文表头
+    header_map: Dict[str, str] = {}
+    for h in reader.fieldnames or []:
+        # 优先使用同义词映射
+        mapped_key = HEADER_SYNONYMS.get(h)
+        if mapped_key:
+            header_map[mapped_key] = h
+        else:
+            # 否则使用标准化表头
+            normalized = _normalize_header(h)
+            header_map[normalized] = h
+    
+    if "part_number" not in header_map:
+        raise ValueError("未找到 '产品编号/part_number' 列，请检查表头")
+    
+    # 为了保持兼容性，仍然构建原始的 headers 字典
+    headers = {k: header_map[k] for k in header_map}
 
     created = 0
     errors: List[str] = []
@@ -187,6 +203,7 @@ def _find_header_row(ws: Worksheet, max_scan: int = 50) -> int:
 
 
 def import_xlsx(file_bytes: bytes, project_id: int | None = None) -> Dict[str, Any]:
+    print(f"DEBUG: import_xlsx called with project_id: {project_id}")
     wb = load_workbook(BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
