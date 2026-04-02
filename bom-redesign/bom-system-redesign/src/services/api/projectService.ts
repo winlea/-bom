@@ -26,7 +26,7 @@ class ProjectService {
   async getProjects(q?: string): Promise<Project[]> {
     const params = q ? { q } : {};
     const response = await axiosInstance.get('/projects', { params });
-    return response.items || [];
+    return response as unknown as Project[];
   }
 
   /**
@@ -66,8 +66,8 @@ class ProjectService {
    * @returns 是否删除成功
    */
   async deleteProject(projectId: number): Promise<boolean> {
-    const response = await axiosInstance.delete(`/projects/${projectId}`);
-    return response.success || true;
+    await axiosInstance.delete(`/projects/${projectId}`);
+    return true;
   }
 
   /**
@@ -77,7 +77,7 @@ class ProjectService {
    */
   async getProjectParts(projectId: number): Promise<any[]> {
     const response = await axiosInstance.get(`/parts?project_id=${projectId}`);
-    return response.data || response.items || response || [];
+    return response as unknown as any[];
   }
 }
 

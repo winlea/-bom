@@ -1,5 +1,4 @@
 import base64
-import io
 import json
 import time
 import urllib.request

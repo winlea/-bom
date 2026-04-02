@@ -1,38 +1,56 @@
-import sqlite3
+#!/usr/bin/env python3
+"""
+检查数据库中的项目数据
+"""
 
-print('检查数据库连接...')
+from app import create_app
+from bom_system.models import db, Project, BomTable
+from bom_system.dimensions.models import Dimension
 
-try:
-    # 连接数据库
-    conn = sqlite3.connect('bom_db.sqlite')
-    cursor = conn.cursor()
-    print('数据库连接成功')
-    
-    # 检查是否存在projects表
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='projects'")
-    projects_table = cursor.fetchone()
-    
-    if projects_table:
-        print('projects表存在')
-        
-        # 查看表结构
-        cursor.execute("PRAGMA table_info(projects)")
-        columns = cursor.fetchall()
-        print('表结构:')
-        for col in columns:
-            print(f'ID: {col[0]}, 名称: {col[1]}, 类型: {col[2]}, 非空: {col[3]}, 默认值: {col[4]}, 主键: {col[5]}')
-        
-        # 查看表中的数据
-        cursor.execute("SELECT * FROM projects LIMIT 10")
-        rows = cursor.fetchall()
-        print(f'\n表中数据 ({len(rows)} 行):')
-        for row in rows:
-            print(row)
-    else:
-        print('projects表不存在')
-        
-    # 关闭连接
-    conn.close()
-    
-except Exception as e:
-    print(f'数据库操作失败: {e}')
+
+def check_db():
+    """检查数据库中的项目数据"""
+    app = create_app()
+
+    with app.app_context():
+        print("🔧 开始检查数据库...")
+
+        try:
+            # 检查项目数量
+            project_count = Project.query.count()
+            print(f"项目数量: {project_count}")
+
+            # 检查项目列表
+            projects = Project.query.all()
+            print("项目列表:")
+            for project in projects:
+                print(f"  - {project.name} (ID: {project.id})")
+
+            # 检查零件数量
+            part_count = BomTable.query.count()
+            print(f"零件数量: {part_count}")
+
+            # 检查零件列表
+            parts = BomTable.query.all()
+            print("零件列表:")
+            for part in parts:
+                print(f"  - {part.part_number} (ID: {part.id}, 项目ID: {part.project_id})")
+
+            # 检查尺寸数量
+            dimension_count = Dimension.query.count()
+            print(f"尺寸数量: {dimension_count}")
+
+            # 检查尺寸列表
+            dimensions = Dimension.query.limit(5).all()
+            print("尺寸列表 (前5个):")
+            for dimension in dimensions:
+                print(f"  - ID: {dimension.id}, 项目ID: {dimension.project_id}, 零件ID: {dimension.part_id}, 类型: {dimension.dimension_type}")
+
+        except Exception as e:
+            print(f"❌ 检查数据库失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+
+if __name__ == "__main__":
+    check_db()

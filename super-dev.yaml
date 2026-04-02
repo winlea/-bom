@@ -1,0 +1,44 @@
+author: ''
+backend: python
+cli: {}
+database: sqlite
+description: 根据GD&T设计一个尺寸添加及管理系统，先提供设计思路
+domain: ''
+experts:
+- PM
+- ARCHITECT
+- UI
+- UX
+- SECURITY
+- CODE
+frontend: react
+host_compatibility_min_ready_hosts: 1
+host_compatibility_min_score: 80
+host_profile_enforce_selected: true
+host_profile_targets:
+- codebuddy
+- cursor-cli
+- kiro-cli
+- qoder-cli
+- cursor
+- kiro
+- qoder
+knowledge_allowed_domains: []
+knowledge_cache_ttl_seconds: 1800
+language_preferences: []
+license: MIT
+name: bom-system
+output_dir: output
+phases:
+- discovery
+- intelligence
+- drafting
+- redteam
+- qa
+- delivery
+- deployment
+platform: web
+quality_gate: 80
+state_management: []
+testing_frameworks: []
+version: 2.0.8

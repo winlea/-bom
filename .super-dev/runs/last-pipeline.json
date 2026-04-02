@@ -1,0 +1,95 @@
+{
+  "status": "waiting_confirmation",
+  "project_name": "根据gd-t设计一个尺寸添加及管理系统-先提供设计思路",
+  "updated_at": "2026-03-21T06:00:30.257580+00:00",
+  "pipeline_args": {
+    "description": "根据GD&T设计一个尺寸添加及管理系统，先提供设计思路",
+    "platform": "web",
+    "frontend": "react",
+    "backend": "node",
+    "domain": "",
+    "name": null,
+    "cicd": "all",
+    "skip_redteam": false,
+    "skip_scaffold": false,
+    "skip_quality_gate": false,
+    "skip_rehearsal_verify": false,
+    "offline": false,
+    "quality_threshold": null
+  },
+  "context": {
+    "change_id": "bom-improvement",
+    "pipeline_policy": {
+      "require_redteam": true,
+      "require_quality_gate": true,
+      "min_quality_threshold": 80,
+      "allowed_cicd_platforms": [
+        "all",
+        "github",
+        "gitlab",
+        "jenkins",
+        "azure",
+        "bitbucket"
+      ],
+      "require_host_profile": false,
+      "required_hosts": [],
+      "enforce_required_hosts_ready": false,
+      "min_required_host_score": 80
+    },
+    "enriched_description": "根据GD&T设计一个尺寸添加及管理系统，先提供设计思路。请结合以下上下文实现：外部最佳实践: Bentley Community - Communities - Precast InvertedTBeamDesign- New Images Beam.；外部最佳实践: 背景设置-基础属性-通用属性-ArkTS组件-ArkUI（方舟UI框架）-应用框架 - 系统预置UI组件库. 状态管理与渲染控制.UIDesignKit（UI设计套件）.；外部最佳实践: Element - The world's most popular VueUIframework - Element，一套为开发者、设计师和产品经理准备的基于 Vue 2.0 的桌面端组件库...",
+    "scenario": "1-N+1",
+    "requirements": [
+      {
+        "spec_name": "core",
+        "req_name": "business-core-flow",
+        "description": "系统应完整支持以下业务目标：根据GD&T设计一个尺寸添加及管理系统，先提供设计思路。请结合以下上下文实现：外部最佳实践: Bentley Community - Communities - Precast InvertedTBeamDesign- New Images Beam.；外部最佳实践: 背景设置-基础属性-通用属性-ArkTS组件-ArkUI（方舟UI框架）-应用框架 - 系统预置UI组件库. 状态管理与渲染控制.UIDesignKit（UI设计套件）.；外部最佳实践: Element - The world's most popular VueUIframework - Element，一套为开发者、设计师和产品经理准备的基于 Vue 2.0 的桌面端组件库...",
+        "scenarios": [
+          {
+            "given": "用户进入系统首页",
+            "when": "按业务路径完成主要操作",
+            "then": "系统成功返回结果并展示下一步引导"
+          }
+        ]
+      },
+      {
+        "spec_name": "profile",
+        "req_name": "profile-management",
+        "description": "用户应可查看和更新个人资料与偏好设置。",
+        "scenarios": [
+          {
+            "given": "用户已经登录",
+            "when": "在个人中心提交更新",
+            "then": "资料变更被持久化并反馈成功状态"
+          }
+        ]
+      },
+      {
+        "spec_name": "content",
+        "req_name": "content-management",
+        "description": "系统应支持内容的创建、审核与发布管理。",
+        "scenarios": [
+          {
+            "given": "编辑已填写内容草稿",
+            "when": "提交发布申请",
+            "then": "内容进入审核并在通过后上线"
+          }
+        ]
+      }
+    ],
+    "docs_confirmation": {
+      "status": "pending_review",
+      "comment": "",
+      "actor": "",
+      "run_id": "",
+      "updated_at": "",
+      "exists": false,
+      "file_path": "C:\\Users\\Administrator\\univer\\-bom\\.super-dev\\review-state\\document-confirmation.json"
+    }
+  },
+  "failure_reason": "pending_review",
+  "failed_stage": "2",
+  "next_stage": "2",
+  "resume_from_stage": "2",
+  "metrics_file": "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-pipeline-metrics.json",
+  "contract_file": "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-pipeline-contract.json"
+}

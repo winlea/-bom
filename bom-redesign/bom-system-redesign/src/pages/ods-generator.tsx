@@ -243,18 +243,42 @@ export default function ODSGeneratorPage() {
       const project = projects.find(p => p.id === selectedProject);
 
       if (part && project) {
-        setHeaderData({
-          program: project.name || '131231',
-          partName: part.part_name || '左侧侧板',
-          partNo: part.part_number || 'Y0704612',
-          customer: part.customer_name || '德吉亚（武汉）',
-          material: part.final_material_cn || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
-          qbobStandard: part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
-          drawingNo: part.drawing_2d || '',
-          drawingDate: '4266005/01',
-          version: '',
-          stationName: '冲压',
-        });
+        // 获取项目详情，包括客户信息
+        const fetchProjectDetails = async () => {
+          try {
+            const response = await fetch(`/api/projects/${selectedProject}`);
+            if (response.ok) {
+              const projectDetails = await response.json();
+              setHeaderData({
+                program: projectDetails.name || '131231',
+                partName: part.part_name || '左侧侧板',
+                partNo: part.part_number || 'Y0704612',
+                customer: projectDetails.customer_name || '德吉亚（武汉）',
+                material: part.final_material_cn || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+                qbobStandard: part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+                drawingNo: part.drawing_2d || '',
+                drawingDate: '4266005/01',
+                version: '',
+                stationName: '冲压',
+              });
+            }
+          } catch (error) {
+            console.error('获取项目详情失败:', error);
+            // 失败时使用默认值
+            setHeaderData({
+              program: project.name || '131231',
+              partName: part.part_name || '左侧侧板',
+              partNo: part.part_number || 'Y0704612',
+              customer: '德吉亚（武汉）',
+              material: part.final_material_cn || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+              qbobStandard: part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+              drawingNo: part.drawing_2d || '',
+              drawingDate: '4266005/01',
+              version: '',
+              stationName: '冲压',
+            });
+          }
+        };
 
         const fetchDimensions = async () => {
           try {
@@ -293,6 +317,8 @@ export default function ODSGeneratorPage() {
             }]);
           }
         };
+
+        fetchProjectDetails();
         fetchDimensions();
       }
     }

@@ -21,6 +21,8 @@ import {
   AlertCircle,
   Upload,
   FileUp,
+  FileBarChart,
+  Loader2,
 } from 'lucide-react';
 import ImportModal from '@/components/import-modal';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +61,7 @@ export default function ProjectsPage() {
       if (Array.isArray(j)) items = j;
       else if (j && Array.isArray(j.items)) items = j.items;
       else if (j && Array.isArray(j.data)) items = j.data;
+      else if (j && j.data && Array.isArray(j.data.items)) items = j.data.items;
       else items = [];
 
       // 获取每个项目的零件数量（去重）
@@ -75,6 +78,8 @@ export default function ProjectsPage() {
               parts = partsData.items;
             } else if (partsData && Array.isArray(partsData.data)) {
               parts = partsData.data;
+            } else if (partsData && partsData.data && Array.isArray(partsData.data.items)) {
+              parts = partsData.data.items;
             }
 
             // 去重计算零件数量（根据part_number字段）
@@ -96,6 +101,7 @@ export default function ProjectsPage() {
         })
       );
 
+      console.log('获取到的项目数据:', projectsWithPartsCount);
       setProjects(projectsWithPartsCount);
     } catch (e) {
       console.error(e);
@@ -129,7 +135,7 @@ export default function ProjectsPage() {
         // 跳转到零件列表页面
         navigate(`/parts?project_id=${newId}`);
       } else {
-        alert('创建失败：' + (j?.message || r.status));
+        alert('创建失败：' + (j?.details || j?.error || r.status));
       }
     } catch (e: any) {
       alert('创建失败：' + (e?.message || e));
@@ -143,12 +149,13 @@ export default function ProjectsPage() {
 
     try {
       const r = await fetch(`/api/projects/${projectToDelete.id}`, { method: 'DELETE' });
+      const j = await r.json().catch(() => null);
       if (r.ok) {
         setDeleteDialogOpen(false);
         setProjectToDelete(null);
         fetchProjects();
       } else {
-        alert('删除失败：' + r.status);
+        alert('删除失败：' + (j?.details || j?.error || r.status));
       }
     } catch (e: any) {
       alert('删除失败：' + (e?.message || e));
@@ -186,7 +193,7 @@ export default function ProjectsPage() {
               />
             </div>
             <Button
-              onClick={() => setCreateDialogOpen(true)}
+              onClick={() => navigate('/project-edit')}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Plus size={18} className="mr-1" /> 新建项目
@@ -265,16 +272,48 @@ export default function ProjectsPage() {
                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     onClick={() => navigate(`/parts?project_id=${project.id}`)}
                   >
-                    <Layers size={16} className="mr-1" /> 查看零件
+                    <Layers size={16} className="mr-1" />
+                    查看零件
                   </Button>
 
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-slate-600 hover:text-slate-700 hover:bg-slate-100"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch('/api/process-capability/generate', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ project_id: project.id }),
+                          });
+                          
+                          if (response.ok) {
+                            const data = await response.json();
+                            alert(`成功生成 ${data.files?.length || 0} 个初始过程能力分析报告`);
+                          } else {
+                            const errorData = await response.json();
+                            alert('生成报告失败：' + (errorData?.details || errorData?.error || '未知错误'));
+                          }
+                        } catch (error) {
+                          alert('生成报告失败：' + (error as any)?.message || '网络错误');
+                        }
+                      }}
                     >
-                      <Edit size={16} className="mr-1" /> 编辑
+                      <FileBarChart size={16} className="mr-1" />
+                      过程能力报告
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-600 hover:text-slate-700 hover:bg-slate-100"
+                      onClick={() => navigate(`/project-edit/${project.id}`)}
+                    >
+                      <Edit size={16} className="mr-1" />
+                      编辑
                     </Button>
                     <Button
                       variant="ghost"
@@ -285,7 +324,8 @@ export default function ProjectsPage() {
                         setDeleteDialogOpen(true);
                       }}
                     >
-                      <Trash2 size={16} className="mr-1" /> 删除
+                      <Trash2 size={16} className="mr-1" />
+                      删除
                     </Button>
                   </div>
                 </div>

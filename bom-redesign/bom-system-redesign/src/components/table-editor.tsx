@@ -40,7 +40,7 @@ interface TableEditorProps {
 export default function TableEditor({
   initialRows = 9,
   initialCols = 16,
-  initialData = null,
+  initialData = [] as Cell[][],
   onSave,
 }: TableEditorProps) {
   // 列标题 (A-Z)

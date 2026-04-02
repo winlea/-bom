@@ -1,16 +1,18 @@
 import pytest
-from bom_system.dimensions.services import DimensionService, DimensionValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from bom_system.config.manager import ConfigManager
+from bom_system.dimensions.services import DimensionService, DimensionValidationError
 
 # 获取数据库连接字符串
 config_manager = ConfigManager()
-DATABASE_URL = config_manager.get('DATABASE_URL', 'sqlite:///bom_db.sqlite')
+DATABASE_URL = config_manager.get("DATABASE_URL", "sqlite:///bom_db.sqlite")
 
 # 创建数据库引擎和会话
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
+
 
 class TestDimensionValidation:
     """测试尺寸验证逻辑（符合ISO 1101-2004标准）"""
@@ -34,9 +36,9 @@ class TestDimensionValidation:
             "lowerTolerance": "-0.05",
             "datum": "A",
             "characteristic": "尺寸1",
-            "notes": "测试尺寸"
+            "notes": "测试尺寸",
         }
-        
+
         # 应该通过验证
         self.service.validate_dimension_data(valid_data)
 
@@ -49,11 +51,11 @@ class TestDimensionValidation:
             "upperTolerance": "0.05",
             "lowerTolerance": "-0.05",
             "datum": "A",
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="公差值必须是正数"):
+        with pytest.raises(DimensionValidationError, match="\[公差值\] 不能为负数"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_invalid_upper_tolerance_less_than_lower(self):
@@ -64,11 +66,13 @@ class TestDimensionValidation:
             "upperTolerance": "-0.05",  # 上公差小于下公差
             "lowerTolerance": "0.05",
             "datum": "A",
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="上公差必须大于或等于下公差"):
+        with pytest.raises(
+            DimensionValidationError, match="上公差必须大于或等于下公差"
+        ):
             self.service.validate_dimension_data(invalid_data)
 
     def test_invalid_datum_format(self):
@@ -78,11 +82,11 @@ class TestDimensionValidation:
             "nominalValue": "10.0",
             "toleranceValue": "0.1",
             "datum": "a",  # 小写字母，无效
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="基准符号必须是大写字母"):
+        with pytest.raises(DimensionValidationError, match="\[基准符号\] 格式无效"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_invalid_dimension_type(self):
@@ -92,26 +96,25 @@ class TestDimensionValidation:
             "nominalValue": "10.0",
             "toleranceValue": "0.1",
             "datum": "A",
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="无效的尺寸类型"):
+        with pytest.raises(DimensionValidationError, match="\[尺寸类型\] 无效"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_missing_characteristic(self):
-        """测试缺少特殊特性"""
+        """测试缺少特殊特性（现在允许为空）"""
         invalid_data = {
             "dimensionType": "linear",
             "nominalValue": "10.0",
             "toleranceValue": "0.1",
             "datum": "A",
-            "characteristic": ""  # 空的特殊特性
+            "characteristic": "",  # 空的特殊特性
         }
-        
-        # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="特殊特性不能为空"):
-            self.service.validate_dimension_data(invalid_data)
+
+        # 应该通过验证，因为特殊特性现在允许为空
+        self.service.validate_dimension_data(invalid_data)
 
     def test_missing_nominal_value(self):
         """测试缺少名义值"""
@@ -120,11 +123,11 @@ class TestDimensionValidation:
             "nominalValue": "",  # 空的名义值
             "toleranceValue": "0.1",
             "datum": "A",
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="名义值不能为空"):
+        with pytest.raises(DimensionValidationError, match="\[名义值\] 不能为空"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_invalid_nominal_value_format(self):
@@ -134,11 +137,11 @@ class TestDimensionValidation:
             "nominalValue": "invalid",  # 无效的数值格式
             "toleranceValue": "0.1",
             "datum": "A",
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="名义值必须是有效数字"):
+        with pytest.raises(DimensionValidationError, match="\[名义值\] 必须是有效数字"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_valid_image_dimension(self):
@@ -146,9 +149,9 @@ class TestDimensionValidation:
         valid_data = {
             "dimensionType": "image",
             "imageUrl": "/static/uploads/dimensions/test.png",
-            "characteristic": "图片尺寸"
+            "characteristic": "图片尺寸",
         }
-        
+
         # 应该通过验证
         self.service.validate_dimension_data(valid_data)
 
@@ -157,24 +160,23 @@ class TestDimensionValidation:
         invalid_data = {
             "dimensionType": "image",
             "imageUrl": "",  # 空的图片URL
-            "characteristic": "图片尺寸"
+            "characteristic": "图片尺寸",
         }
-        
+
         # 应该抛出验证错误
         with pytest.raises(DimensionValidationError, match="图片尺寸必须包含图片URL"):
             self.service.validate_dimension_data(invalid_data)
 
     def test_invalid_image_dimension_missing_characteristic(self):
-        """测试缺少特殊特性的图片尺寸"""
+        """测试缺少特殊特性的图片尺寸（现在允许为空）"""
         invalid_data = {
             "dimensionType": "image",
             "imageUrl": "/static/uploads/dimensions/test.png",
-            "characteristic": ""  # 空的特殊特性
+            "characteristic": "",  # 空的特殊特性
         }
-        
-        # 应该抛出验证错误
-        with pytest.raises(DimensionValidationError, match="图片尺寸必须包含特殊特性"):
-            self.service.validate_dimension_data(invalid_data)
+
+        # 应该通过验证，因为特殊特性现在允许为空
+        self.service.validate_dimension_data(invalid_data)
 
     def test_valid_datum_with_number(self):
         """测试带数字的有效基准符号"""
@@ -183,9 +185,9 @@ class TestDimensionValidation:
             "nominalValue": "10.0",
             "toleranceValue": "0.1",
             "datum": "A1",  # 带数字的基准符号
-            "characteristic": "尺寸1"
+            "characteristic": "尺寸1",
         }
-        
+
         # 应该通过验证
         self.service.validate_dimension_data(valid_data)
 
@@ -196,9 +198,9 @@ class TestDimensionValidation:
             "nominalValue": "90.0",
             "toleranceValue": "1.0",
             "datum": "A",
-            "characteristic": "角度尺寸"
+            "characteristic": "角度尺寸",
         }
-        
+
         # 应该通过验证
         self.service.validate_dimension_data(valid_data)
 
@@ -209,8 +211,8 @@ class TestDimensionValidation:
             "nominalValue": "0.0",
             "toleranceValue": "0.1",
             "datum": "A-B-C",  # 多个基准符号
-            "characteristic": "位置度"
+            "characteristic": "位置度",
         }
-        
+
         # 应该通过验证
         self.service.validate_dimension_data(valid_data)

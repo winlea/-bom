@@ -1,0 +1,42 @@
+{
+  "project_name": "根据gd-t设计一个尺寸添加及管理系统-先提供设计思路",
+  "started_at": "2026-03-21T06:00:15.054603+00:00",
+  "finished_at": "2026-03-21T06:00:30.251814+00:00",
+  "success": false,
+  "failure_reason": "waiting_confirmation",
+  "total_duration_seconds": 15.197,
+  "success_rate": 100.0,
+  "stages": [
+    {
+      "stage": "0",
+      "title": "需求增强",
+      "success": true,
+      "duration_seconds": 15.121,
+      "details": {
+        "local_knowledge_count": 0,
+        "web_knowledge_count": 5,
+        "cache_file": "C:\\Users\\Administrator\\univer\\-bom\\output\\knowledge-cache\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-knowledge-bundle.json",
+        "cache_hit": false,
+        "knowledge_cache_ttl_seconds": 1800,
+        "knowledge_allowed_domains": [],
+        "web_filtered_out_count": 0
+      }
+    },
+    {
+      "stage": "1",
+      "title": "专业文档生成",
+      "success": true,
+      "duration_seconds": 0.062,
+      "details": {
+        "scenario": "1-N+1",
+        "docs": [
+          "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-prd.md",
+          "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-architecture.md",
+          "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-uiux.md",
+          "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-execution-plan.md",
+          "C:\\Users\\Administrator\\univer\\-bom\\output\\根据gd-t设计一个尺寸添加及管理系统-先提供设计思路-frontend-blueprint.md"
+        ]
+      }
+    }
+  ]
+}

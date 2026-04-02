@@ -57,7 +57,7 @@ export const DimensionImageCombiner: React.FC<DimensionImageCombinerProps> = ({
   const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>({
     canvasWidth: 1200,
     canvasHeight: 800,
-    gridCols: 3,
+    gridCols: 1, // 每个尺寸另起一行，固定为1
     padding: 30,
     spacing: 20,
     backgroundColor: '#ffffff',
@@ -190,28 +190,27 @@ export const DimensionImageCombiner: React.FC<DimensionImageCombinerProps> = ({
       
       setDimensionCanvases(canvasMap);
 
-      // 计算布局
-      const { gridCols, padding, spacing } = layoutConfig;
-      const availableWidth = (canvas.width - 2 * padding - (gridCols - 1) * spacing) / gridCols;
-      const itemHeight = 100;
-
-      let currentRow = 0;
-      let currentCol = 0;
+      // 计算布局 - 水平拼接成一行
+      const { padding, spacing } = layoutConfig;
+      const totalItems = dimensions.length;
+      const itemWidth = (canvas.width - 2 * padding - (totalItems - 1) * spacing) / totalItems;
+      const itemHeight = canvas.height - 2 * padding;
 
       // 绘制每个尺寸图片
-      for (const dimension of dimensions) {
+      for (let i = 0; i < dimensions.length; i++) {
+        const dimension = dimensions[i];
         const canvasDataUrl = canvasMap.get(dimension.id);
         if (!canvasDataUrl) continue;
 
         // 创建图片对象
         const img = new Image();
         img.onload = () => {
-          // 计算位置
-          const x = padding + currentCol * (availableWidth + spacing);
-          const y = padding + currentRow * (itemHeight + spacing);
+          // 计算位置 - 水平排列
+          const x = padding + i * (itemWidth + spacing);
+          const y = padding;
 
           // 绘制图片
-          ctx.drawImage(img, x, y, availableWidth, itemHeight);
+          ctx.drawImage(img, x, y, itemWidth, itemHeight);
 
           // 绘制编号
           ctx.fillStyle = '#1e293b';
@@ -220,13 +219,6 @@ export const DimensionImageCombiner: React.FC<DimensionImageCombinerProps> = ({
           ctx.fillText(`${dimension.groupNo}`, x + 5, y + 20);
         };
         img.src = canvasDataUrl;
-
-        // 更新位置
-        currentCol++;
-        if (currentCol >= gridCols) {
-          currentCol = 0;
-          currentRow++;
-        }
       }
 
       // 生成预览URL
@@ -326,7 +318,7 @@ export const DimensionImageCombiner: React.FC<DimensionImageCombinerProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="canvasWidth">画布宽度</Label>
               <Input
@@ -353,20 +345,6 @@ export const DimensionImageCombiner: React.FC<DimensionImageCombinerProps> = ({
                 }))}
                 min="300"
                 max="1500"
-              />
-            </div>
-            <div>
-              <Label htmlFor="gridCols">列数</Label>
-              <Input
-                id="gridCols"
-                type="number"
-                value={layoutConfig.gridCols}
-                onChange={(e) => setLayoutConfig(prev => ({
-                  ...prev,
-                  gridCols: parseInt(e.target.value) || 3
-                }))}
-                min="1"
-                max="6"
               />
             </div>
             <div>

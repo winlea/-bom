@@ -13,12 +13,16 @@ from bom_system.models import db
 # from bom_system.ods.enhanced_api import enhanced_ods_bp
 # from bom_system.ods.wz1d_api import wz1d_bp
 # from bom_system.ods.enhanced_wz1d_api import enhanced_wz1d_bp
-from bom_system.parts import bp as parts_bp
+# from bom_system.parts import bp as parts_bp
 from bom_system.projects import bp as projects_bp
 
 # Initialize config manager
 config_manager = ConfigManager()
-SQLALCHEMY_DATABASE_URI = config_manager.get('DATABASE_URL', 'sqlite:///bom_db.sqlite')
+import os
+# 使用绝对路径连接数据库
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'instance', 'bom_db.sqlite')
+SQLALCHEMY_DATABASE_URI = config_manager.get('DATABASE_URL', f'sqlite:///{DB_PATH}')
 SQLALCHEMY_TRACK_MODIFICATIONS = config_manager.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
 
@@ -48,14 +52,16 @@ def create_app() -> Flask:
             "http://127.0.0.1:5175",
             "http://localhost:5176",
             "http://127.0.0.1:5176",
+            "http://localhost:5177",
+            "http://127.0.0.1:5177",
         ],
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     )
 
     # Blueprints
-    app.register_blueprint(api_bp)
-    app.register_blueprint(parts_bp)
+    app.register_blueprint(api_bp, url_prefix="/api")
+    # app.register_blueprint(parts_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp, url_prefix="/api")
     app.register_blueprint(dimensions_bp)

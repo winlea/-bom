@@ -1,0 +1,992 @@
+{
+  "project_dir": "C:\\Users\\Administrator\\univer\\-bom",
+  "detected_hosts": [
+    "codebuddy",
+    "cursor-cli",
+    "kiro-cli",
+    "qoder-cli",
+    "cursor",
+    "kiro",
+    "qoder"
+  ],
+  "detection_details": {
+    "codebuddy": [
+      "path:C:\\Users\\Administrator\\AppData\\Local/Programs/CodeBuddy/CodeBuddy.exe"
+    ],
+    "cursor-cli": [
+      "cmd:cursor",
+      "path:C:\\Users\\Administrator\\AppData\\Local/Programs/Cursor/Cursor.exe"
+    ],
+    "kiro-cli": [
+      "cmd:kiro"
+    ],
+    "qoder-cli": [
+      "cmd:qoder"
+    ],
+    "cursor": [
+      "cmd:cursor",
+      "path:C:\\Users\\Administrator\\AppData\\Local/Programs/Cursor/Cursor.exe"
+    ],
+    "kiro": [
+      "path:C:\\Users\\Administrator\\AppData\\Local/Programs/Kiro/Kiro.exe"
+    ],
+    "qoder": [
+      "cmd:qoder"
+    ]
+  },
+  "selected_targets": [
+    "codebuddy",
+    "cursor-cli",
+    "kiro-cli",
+    "qoder-cli",
+    "cursor",
+    "kiro",
+    "qoder"
+  ],
+  "report": {
+    "hosts": {
+      "codebuddy": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.codebuddy\\rules.md",
+              "C:\\Users\\Administrator\\univer\\-bom\\.codebuddy\\agents\\super-dev-core.md",
+              "C:\\Users\\Administrator\\univer\\-bom\\.codebuddy\\skills\\super-dev-core\\SKILL.md"
+            ]
+          },
+          "skill": {
+            "ok": false,
+            "file": "C:\\Users\\Administrator\\.codebuddy\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": true,
+            "mode": "managed"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.codebuddy\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.codebuddy\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "skill",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target codebuddy --force",
+          "super-dev skill install super-dev --target codebuddy --name super-dev-core --force",
+          "super-dev onboard --host codebuddy --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "codebuddy",
+          "category": "ide",
+          "certification_level": "experimental",
+          "certification_label": "Experimental",
+          "certification_reason": "IDE 侧 commands + agents + skills 接入完整，但对 Agent Chat slash 的项目级行为仍缺少持续真机验证。",
+          "certification_evidence": [
+            "官方文档公开 IDE integrations",
+            "官方文档公开 Subagents 与 Skills",
+            "Super Dev 已写入 rules、commands、agents 与 skills 接入面"
+          ],
+          "host_protocol_mode": "official-subagent",
+          "host_protocol_summary": "官方 commands + agents + skills",
+          "official_project_surfaces": [
+            ".codebuddy/rules.md",
+            ".codebuddy/commands/super-dev.md",
+            ".codebuddy/agents/super-dev-core.md",
+            ".codebuddy/skills/super-dev-core/SKILL.md"
+          ],
+          "official_user_surfaces": [
+            "~/.codebuddy/commands/super-dev.md",
+            "~/.codebuddy/agents/super-dev-core.md",
+            "~/.codebuddy/skills/super-dev-core/SKILL.md"
+          ],
+          "observed_compatibility_surfaces": [],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "IDE Agent Chat",
+          "usage_location": "打开 CodeBuddy IDE 的 Agent Chat，在项目上下文内触发。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "在 IDE Agent Chat 中执行 /super-dev。",
+            "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+          ],
+          "usage_notes": [
+            "建议在项目级 Agent Chat 中使用，不要脱离项目上下文。",
+            "先让宿主完成 research，再继续文档和编码。",
+            "官方文档已公开 `.codebuddy/commands/`、`.codebuddy/agents/`、`.codebuddy/skills/` 与 `~/.codebuddy/agents/`、`~/.codebuddy/skills/`。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      },
+      "cursor-cli": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.cursor\\rules\\super-dev.mdc"
+            ]
+          },
+          "skill": {
+            "ok": true,
+            "file": "C:\\Users\\Administrator\\.cursor\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": false,
+            "mode": "compatibility-surface-unavailable"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.cursor\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.cursor\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target cursor-cli --force",
+          "super-dev onboard --host cursor-cli --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "cursor-cli",
+          "category": "cli",
+          "certification_level": "compatible",
+          "certification_label": "Compatible",
+          "certification_reason": "官方 CLI slash 文档明确，当前接入链路完整，但仍需更多运行级认证样本。",
+          "certification_evidence": [
+            "官方文档公开 CLI slash commands",
+            "Super Dev 已提供规则、Skill 与 slash 安装路径"
+          ],
+          "host_protocol_mode": "official-context",
+          "host_protocol_summary": "官方 commands + rules",
+          "official_project_surfaces": [
+            ".cursor/rules/super-dev.mdc",
+            ".cursor/commands/super-dev.md"
+          ],
+          "official_user_surfaces": [
+            "~/.cursor/commands/super-dev.md"
+          ],
+          "observed_compatibility_surfaces": [
+            "~/.cursor/skills/super-dev-core/SKILL.md"
+          ],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "当前 CLI 宿主会话",
+          "usage_location": "在项目目录启动 Cursor CLI 当前会话后触发。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "保持在宿主当前会话中执行 /super-dev。",
+            "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+          ],
+          "usage_notes": [
+            "适合终端内连续执行研究、文档和编码。",
+            "若命令列表未刷新，可重开一次 Cursor CLI 会话。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      },
+      "kiro-cli": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.kiro\\AGENTS.md"
+            ]
+          },
+          "skill": {
+            "ok": true,
+            "file": "C:\\Users\\Administrator\\.kiro\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": false,
+            "mode": "compatibility-surface-unavailable"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.kiro\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.kiro\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target kiro-cli --force",
+          "super-dev onboard --host kiro-cli --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "kiro-cli",
+          "category": "cli",
+          "certification_level": "compatible",
+          "certification_label": "Compatible",
+          "certification_reason": "CLI 接入与 Kiro 生态规则一致，但仍需补更完整的长期回归样本。",
+          "certification_evidence": [
+            "官方文档公开 Kiro CLI",
+            "Super Dev 已提供规则、Skill 与 slash/steering 接入"
+          ],
+          "host_protocol_mode": "official-context",
+          "host_protocol_summary": "官方 commands + AGENTS.md",
+          "official_project_surfaces": [
+            ".kiro/AGENTS.md",
+            ".kiro/commands/super-dev.md"
+          ],
+          "official_user_surfaces": [],
+          "observed_compatibility_surfaces": [
+            "~/.kiro/skills/super-dev-core/SKILL.md"
+          ],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "当前 CLI 宿主会话",
+          "usage_location": "在项目目录启动 Kiro CLI 会话后触发。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "保持在宿主当前会话中执行 /super-dev。",
+            "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+          ],
+          "usage_notes": [
+            "CLI 模式下直接使用 slash。",
+            "如果项目规则未刷新，重新进入项目目录再启动 Kiro CLI。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      },
+      "qoder-cli": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.qoder\\AGENTS.md"
+            ]
+          },
+          "skill": {
+            "ok": false,
+            "file": "C:\\Users\\Administrator\\.qoder\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": true,
+            "mode": "managed"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.qoder\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.qoder\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "skill",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target qoder-cli --force",
+          "super-dev skill install super-dev --target qoder-cli --name super-dev-core --force",
+          "super-dev onboard --host qoder-cli --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "qoder-cli",
+          "category": "cli",
+          "certification_level": "compatible",
+          "certification_label": "Compatible",
+          "certification_reason": "Qoder CLI 文档明确、接入链路完整，当前定位为稳定兼容而非已认证。",
+          "certification_evidence": [
+            "官方文档公开 Qoder CLI 与 rules",
+            "Super Dev 已提供规则、Skill 与 slash 安装路径"
+          ],
+          "host_protocol_mode": "official-skill",
+          "host_protocol_summary": "官方 commands + skills",
+          "official_project_surfaces": [
+            ".qoder/AGENTS.md",
+            ".qoder/commands/super-dev.md",
+            ".qoder/skills/super-dev-core/SKILL.md"
+          ],
+          "official_user_surfaces": [
+            "~/.qoder/commands/super-dev.md",
+            "~/.qoder/skills/super-dev-core/SKILL.md"
+          ],
+          "observed_compatibility_surfaces": [],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "当前 CLI 宿主会话",
+          "usage_location": "在项目目录启动 Qoder CLI 会话后触发。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "保持在宿主当前会话中执行 /super-dev。",
+            "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+          ],
+          "usage_notes": [
+            "适合命令行流水线开发。",
+            "若 slash 未生效，先确认 .qoder/commands/super-dev.md 已生成。",
+            "官方文档已公开 .qoder/skills 与 ~/.qoder/skills。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      },
+      "cursor": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.cursor\\rules\\super-dev.mdc"
+            ]
+          },
+          "skill": {
+            "ok": true,
+            "file": "C:\\Users\\Administrator\\.cursor\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": false,
+            "mode": "compatibility-surface-unavailable"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.cursor\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.cursor\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target cursor --force",
+          "super-dev onboard --host cursor --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "cursor",
+          "category": "ide",
+          "certification_level": "experimental",
+          "certification_label": "Experimental",
+          "certification_reason": "IDE Agent Chat 能力可映射，但项目级 slash 行为仍需持续运行级验证。",
+          "certification_evidence": [
+            "官方文档公开 Agent commands",
+            "Super Dev 已写入规则、Skill 与命令映射"
+          ],
+          "host_protocol_mode": "official-context",
+          "host_protocol_summary": "官方 commands + rules",
+          "official_project_surfaces": [
+            ".cursor/rules/super-dev.mdc",
+            ".cursor/commands/super-dev.md"
+          ],
+          "official_user_surfaces": [
+            "~/.cursor/commands/super-dev.md"
+          ],
+          "observed_compatibility_surfaces": [
+            "~/.cursor/skills/super-dev-core/SKILL.md"
+          ],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "IDE Agent Chat",
+          "usage_location": "打开 Cursor 的 Agent Chat，并确保当前工作区就是目标项目。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "在 IDE Agent Chat 中执行 /super-dev。",
+            "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+          ],
+          "usage_notes": [
+            "建议固定在同一个 Agent Chat 会话里完成整条流水线。",
+            "如果项目规则没加载，先重新打开工作区或重新发起聊天。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      },
+      "kiro": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.kiro\\AGENTS.md",
+              "C:\\Users\\Administrator\\univer\\-bom\\.kiro\\steering\\super-dev.md"
+            ]
+          },
+          "slash": {
+            "ok": true,
+            "scope": "n/a",
+            "project_file": "",
+            "global_file": "",
+            "mode": "rules-only"
+          }
+        },
+        "missing": [
+          "integrate"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target kiro --force"
+        ],
+        "usage_profile": {
+          "host": "kiro",
+          "category": "ide",
+          "certification_level": "experimental",
+          "certification_label": "Experimental",
+          "certification_reason": "IDE steering 模式已对齐，但手动触发与 Agent 行为仍需更多真机验证。",
+          "certification_evidence": [
+            "官方文档公开 steering",
+            "Super Dev 已写入规则、Skill 与 steering 文件"
+          ],
+          "host_protocol_mode": "official-steering",
+          "host_protocol_summary": "官方 project steering + global steering",
+          "official_project_surfaces": [
+            ".kiro/AGENTS.md",
+            ".kiro/steering/super-dev.md"
+          ],
+          "official_user_surfaces": [
+            "~/.kiro/steering/AGENTS.md"
+          ],
+          "observed_compatibility_surfaces": [
+            "~/.kiro/skills/super-dev-core/SKILL.md"
+          ],
+          "usage_mode": "rules-and-skill",
+          "primary_entry": "在 Kiro IDE Agent Chat 输入 `super-dev: <需求描述>`（由 .kiro/steering/super-dev.md + 兼容 Skill〔若检测到〕生效）",
+          "trigger_command": "super-dev: <需求描述>",
+          "final_trigger": "super-dev: 你的需求",
+          "trigger_context": "Kiro IDE Agent Chat",
+          "usage_location": "打开 Kiro IDE 的 Agent Chat 或 AI 面板，在项目上下文内触发。",
+          "requires_restart_after_onboard": true,
+          "restart_required_label": "是",
+          "post_onboard_steps": [
+            "完成接入后重新打开 Kiro，或至少新开一个 Agent Chat，使 steering、rules 与兼容 Skill（若已安装）一起生效。",
+            "确保当前项目就是已接入 Super Dev 的工作区。",
+            "输入 `super-dev: <需求描述>` 触发完整流程。",
+            "按 output/* 与 .super-dev/changes/*/tasks.md 执行开发。"
+          ],
+          "usage_notes": [
+            "Kiro IDE 当前优先按 steering/rules + 宿主级 Skill 模式触发，不走 /super-dev。",
+            "如果 steering、rules 或 Skill 未加载，先重开项目窗口或新开一个 Agent Chat。",
+            "Kiro 官方已公开全局 steering 目录 `~/.kiro/steering/`，Super Dev 会优先写入全局 AGENTS.md。"
+          ],
+          "smoke_test_prompt": "super-dev: 请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+            "在宿主正确的聊天/会话入口输入：super-dev: 请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。"
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "该宿主当前走 steering/rules + compatibility skill 模式：项目级 .kiro/steering/super-dev.md 是核心约束；若检测到 ~/.kiro/skills，则会增强安装 super-dev-core。"
+        }
+      },
+      "qoder": {
+        "ready": false,
+        "checks": {
+          "integrate": {
+            "ok": false,
+            "files": [
+              "C:\\Users\\Administrator\\univer\\-bom\\.qoder\\rules.md"
+            ]
+          },
+          "skill": {
+            "ok": false,
+            "file": "C:\\Users\\Administrator\\.qoderwork\\skills\\super-dev-core\\SKILL.md",
+            "surface_available": true,
+            "mode": "managed"
+          },
+          "slash": {
+            "ok": false,
+            "scope": "missing",
+            "project_file": "C:\\Users\\Administrator\\univer\\-bom\\.qoder\\commands\\super-dev.md",
+            "global_file": "C:\\Users\\Administrator\\.qoder\\commands\\super-dev.md"
+          }
+        },
+        "missing": [
+          "integrate",
+          "skill",
+          "slash"
+        ],
+        "suggestions": [
+          "super-dev integrate setup --target qoder --force",
+          "super-dev skill install super-dev --target qoder --name super-dev-core --force",
+          "super-dev onboard --host qoder --skip-integrate --skip-skill --force --yes"
+        ],
+        "usage_profile": {
+          "host": "qoder",
+          "category": "ide",
+          "certification_level": "experimental",
+          "certification_label": "Experimental",
+          "certification_reason": "官方文档明确支持项目级 commands，当前已按 Agent Chat slash + project rules 建模，但仍需要更多真机样本。",
+          "certification_evidence": [
+            "官方文档公开 Commands 且支持项目级 .qoder/commands/",
+            "Super Dev 已同时写入 .qoder/rules.md 与 .qoder/commands/super-dev.md"
+          ],
+          "host_protocol_mode": "official-skill",
+          "host_protocol_summary": "官方 commands + rules + skills",
+          "official_project_surfaces": [
+            ".qoder/rules.md",
+            ".qoder/commands/super-dev.md",
+            ".qoder/skills/super-dev-core/SKILL.md"
+          ],
+          "official_user_surfaces": [
+            "~/.qoder/commands/super-dev.md",
+            "~/.qoderwork/skills/super-dev-core/SKILL.md"
+          ],
+          "observed_compatibility_surfaces": [],
+          "usage_mode": "native-slash",
+          "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+          "trigger_command": "/super-dev \"<需求描述>\"",
+          "final_trigger": "/super-dev \"你的需求\"",
+          "trigger_context": "IDE Agent Chat",
+          "usage_location": "打开 Qoder IDE 的 Agent Chat，在当前项目内触发。",
+          "requires_restart_after_onboard": false,
+          "restart_required_label": "否",
+          "post_onboard_steps": [
+            "在 IDE Agent Chat 中执行 /super-dev。",
+            "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+          ],
+          "usage_notes": [
+            "Qoder IDE 当前优先按项目级 commands + rules + 宿主级 Skill 模式触发，可直接使用 /super-dev。",
+            "若新增命令未出现，重新打开项目或新开一个 Agent Chat。",
+            "官方文档已公开 .qoder/skills 与 ~/.qoderwork/skills。"
+          ],
+          "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+          "smoke_test_steps": [
+            "进入已接入 Super Dev 的项目目录或工作区。",
+            "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+            "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+          ],
+          "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+          "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+        }
+      }
+    },
+    "overall_ready": false
+  },
+  "compatibility": {
+    "overall_score": 19.05,
+    "ready_hosts": 0,
+    "total_hosts": 7,
+    "enabled_checks": [
+      "integrate",
+      "skill",
+      "slash"
+    ],
+    "hosts": {
+      "codebuddy": {
+        "score": 0.0,
+        "passed": 0,
+        "possible": 3,
+        "ready": false
+      },
+      "cursor-cli": {
+        "score": 33.33,
+        "passed": 1,
+        "possible": 3,
+        "ready": false
+      },
+      "kiro-cli": {
+        "score": 33.33,
+        "passed": 1,
+        "possible": 3,
+        "ready": false
+      },
+      "qoder-cli": {
+        "score": 0.0,
+        "passed": 0,
+        "possible": 3,
+        "ready": false
+      },
+      "cursor": {
+        "score": 33.33,
+        "passed": 1,
+        "possible": 3,
+        "ready": false
+      },
+      "kiro": {
+        "score": 33.33,
+        "passed": 1,
+        "possible": 3,
+        "ready": false
+      },
+      "qoder": {
+        "score": 0.0,
+        "passed": 0,
+        "possible": 3,
+        "ready": false
+      }
+    }
+  },
+  "usage_profiles": {
+    "codebuddy": {
+      "host": "codebuddy",
+      "category": "ide",
+      "certification_level": "experimental",
+      "certification_label": "Experimental",
+      "certification_reason": "IDE 侧 commands + agents + skills 接入完整，但对 Agent Chat slash 的项目级行为仍缺少持续真机验证。",
+      "certification_evidence": [
+        "官方文档公开 IDE integrations",
+        "官方文档公开 Subagents 与 Skills",
+        "Super Dev 已写入 rules、commands、agents 与 skills 接入面"
+      ],
+      "host_protocol_mode": "official-subagent",
+      "host_protocol_summary": "官方 commands + agents + skills",
+      "official_project_surfaces": [
+        ".codebuddy/rules.md",
+        ".codebuddy/commands/super-dev.md",
+        ".codebuddy/agents/super-dev-core.md",
+        ".codebuddy/skills/super-dev-core/SKILL.md"
+      ],
+      "official_user_surfaces": [
+        "~/.codebuddy/commands/super-dev.md",
+        "~/.codebuddy/agents/super-dev-core.md",
+        "~/.codebuddy/skills/super-dev-core/SKILL.md"
+      ],
+      "observed_compatibility_surfaces": [],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "IDE Agent Chat",
+      "usage_location": "打开 CodeBuddy IDE 的 Agent Chat，在项目上下文内触发。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "在 IDE Agent Chat 中执行 /super-dev。",
+        "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+      ],
+      "usage_notes": [
+        "建议在项目级 Agent Chat 中使用，不要脱离项目上下文。",
+        "先让宿主完成 research，再继续文档和编码。",
+        "官方文档已公开 `.codebuddy/commands/`、`.codebuddy/agents/`、`.codebuddy/skills/` 与 `~/.codebuddy/agents/`、`~/.codebuddy/skills/`。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    },
+    "cursor-cli": {
+      "host": "cursor-cli",
+      "category": "cli",
+      "certification_level": "compatible",
+      "certification_label": "Compatible",
+      "certification_reason": "官方 CLI slash 文档明确，当前接入链路完整，但仍需更多运行级认证样本。",
+      "certification_evidence": [
+        "官方文档公开 CLI slash commands",
+        "Super Dev 已提供规则、Skill 与 slash 安装路径"
+      ],
+      "host_protocol_mode": "official-context",
+      "host_protocol_summary": "官方 commands + rules",
+      "official_project_surfaces": [
+        ".cursor/rules/super-dev.mdc",
+        ".cursor/commands/super-dev.md"
+      ],
+      "official_user_surfaces": [
+        "~/.cursor/commands/super-dev.md"
+      ],
+      "observed_compatibility_surfaces": [
+        "~/.cursor/skills/super-dev-core/SKILL.md"
+      ],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "当前 CLI 宿主会话",
+      "usage_location": "在项目目录启动 Cursor CLI 当前会话后触发。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "保持在宿主当前会话中执行 /super-dev。",
+        "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+      ],
+      "usage_notes": [
+        "适合终端内连续执行研究、文档和编码。",
+        "若命令列表未刷新，可重开一次 Cursor CLI 会话。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    },
+    "kiro-cli": {
+      "host": "kiro-cli",
+      "category": "cli",
+      "certification_level": "compatible",
+      "certification_label": "Compatible",
+      "certification_reason": "CLI 接入与 Kiro 生态规则一致，但仍需补更完整的长期回归样本。",
+      "certification_evidence": [
+        "官方文档公开 Kiro CLI",
+        "Super Dev 已提供规则、Skill 与 slash/steering 接入"
+      ],
+      "host_protocol_mode": "official-context",
+      "host_protocol_summary": "官方 commands + AGENTS.md",
+      "official_project_surfaces": [
+        ".kiro/AGENTS.md",
+        ".kiro/commands/super-dev.md"
+      ],
+      "official_user_surfaces": [],
+      "observed_compatibility_surfaces": [
+        "~/.kiro/skills/super-dev-core/SKILL.md"
+      ],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "当前 CLI 宿主会话",
+      "usage_location": "在项目目录启动 Kiro CLI 会话后触发。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "保持在宿主当前会话中执行 /super-dev。",
+        "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+      ],
+      "usage_notes": [
+        "CLI 模式下直接使用 slash。",
+        "如果项目规则未刷新，重新进入项目目录再启动 Kiro CLI。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    },
+    "qoder-cli": {
+      "host": "qoder-cli",
+      "category": "cli",
+      "certification_level": "compatible",
+      "certification_label": "Compatible",
+      "certification_reason": "Qoder CLI 文档明确、接入链路完整，当前定位为稳定兼容而非已认证。",
+      "certification_evidence": [
+        "官方文档公开 Qoder CLI 与 rules",
+        "Super Dev 已提供规则、Skill 与 slash 安装路径"
+      ],
+      "host_protocol_mode": "official-skill",
+      "host_protocol_summary": "官方 commands + skills",
+      "official_project_surfaces": [
+        ".qoder/AGENTS.md",
+        ".qoder/commands/super-dev.md",
+        ".qoder/skills/super-dev-core/SKILL.md"
+      ],
+      "official_user_surfaces": [
+        "~/.qoder/commands/super-dev.md",
+        "~/.qoder/skills/super-dev-core/SKILL.md"
+      ],
+      "observed_compatibility_surfaces": [],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在该 CLI 宿主会话内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "当前 CLI 宿主会话",
+      "usage_location": "在项目目录启动 Qoder CLI 会话后触发。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "保持在宿主当前会话中执行 /super-dev。",
+        "让宿主先完成同类产品研究，再继续文档与编码阶段。"
+      ],
+      "usage_notes": [
+        "适合命令行流水线开发。",
+        "若 slash 未生效，先确认 .qoder/commands/super-dev.md 已生成。",
+        "官方文档已公开 .qoder/skills 与 ~/.qoder/skills。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "CLI 宿主建议直接在当前会话执行 slash 命令；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    },
+    "cursor": {
+      "host": "cursor",
+      "category": "ide",
+      "certification_level": "experimental",
+      "certification_label": "Experimental",
+      "certification_reason": "IDE Agent Chat 能力可映射，但项目级 slash 行为仍需持续运行级验证。",
+      "certification_evidence": [
+        "官方文档公开 Agent commands",
+        "Super Dev 已写入规则、Skill 与命令映射"
+      ],
+      "host_protocol_mode": "official-context",
+      "host_protocol_summary": "官方 commands + rules",
+      "official_project_surfaces": [
+        ".cursor/rules/super-dev.mdc",
+        ".cursor/commands/super-dev.md"
+      ],
+      "official_user_surfaces": [
+        "~/.cursor/commands/super-dev.md"
+      ],
+      "observed_compatibility_surfaces": [
+        "~/.cursor/skills/super-dev-core/SKILL.md"
+      ],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "IDE Agent Chat",
+      "usage_location": "打开 Cursor 的 Agent Chat，并确保当前工作区就是目标项目。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "在 IDE Agent Chat 中执行 /super-dev。",
+        "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+      ],
+      "usage_notes": [
+        "建议固定在同一个 Agent Chat 会话里完成整条流水线。",
+        "如果项目规则没加载，先重新打开工作区或重新发起聊天。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    },
+    "kiro": {
+      "host": "kiro",
+      "category": "ide",
+      "certification_level": "experimental",
+      "certification_label": "Experimental",
+      "certification_reason": "IDE steering 模式已对齐，但手动触发与 Agent 行为仍需更多真机验证。",
+      "certification_evidence": [
+        "官方文档公开 steering",
+        "Super Dev 已写入规则、Skill 与 steering 文件"
+      ],
+      "host_protocol_mode": "official-steering",
+      "host_protocol_summary": "官方 project steering + global steering",
+      "official_project_surfaces": [
+        ".kiro/AGENTS.md",
+        ".kiro/steering/super-dev.md"
+      ],
+      "official_user_surfaces": [
+        "~/.kiro/steering/AGENTS.md"
+      ],
+      "observed_compatibility_surfaces": [
+        "~/.kiro/skills/super-dev-core/SKILL.md"
+      ],
+      "usage_mode": "rules-and-skill",
+      "primary_entry": "在 Kiro IDE Agent Chat 输入 `super-dev: <需求描述>`（由 .kiro/steering/super-dev.md + 兼容 Skill〔若检测到〕生效）",
+      "trigger_command": "super-dev: <需求描述>",
+      "final_trigger": "super-dev: 你的需求",
+      "trigger_context": "Kiro IDE Agent Chat",
+      "usage_location": "打开 Kiro IDE 的 Agent Chat 或 AI 面板，在项目上下文内触发。",
+      "requires_restart_after_onboard": true,
+      "restart_required_label": "是",
+      "post_onboard_steps": [
+        "完成接入后重新打开 Kiro，或至少新开一个 Agent Chat，使 steering、rules 与兼容 Skill（若已安装）一起生效。",
+        "确保当前项目就是已接入 Super Dev 的工作区。",
+        "输入 `super-dev: <需求描述>` 触发完整流程。",
+        "按 output/* 与 .super-dev/changes/*/tasks.md 执行开发。"
+      ],
+      "usage_notes": [
+        "Kiro IDE 当前优先按 steering/rules + 宿主级 Skill 模式触发，不走 /super-dev。",
+        "如果 steering、rules 或 Skill 未加载，先重开项目窗口或新开一个 Agent Chat。",
+        "Kiro 官方已公开全局 steering 目录 `~/.kiro/steering/`，Super Dev 会优先写入全局 AGENTS.md。"
+      ],
+      "smoke_test_prompt": "super-dev: 请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+        "在宿主正确的聊天/会话入口输入：super-dev: 请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。"
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "该宿主当前走 steering/rules + compatibility skill 模式：项目级 .kiro/steering/super-dev.md 是核心约束；若检测到 ~/.kiro/skills，则会增强安装 super-dev-core。"
+    },
+    "qoder": {
+      "host": "qoder",
+      "category": "ide",
+      "certification_level": "experimental",
+      "certification_label": "Experimental",
+      "certification_reason": "官方文档明确支持项目级 commands，当前已按 Agent Chat slash + project rules 建模，但仍需要更多真机样本。",
+      "certification_evidence": [
+        "官方文档公开 Commands 且支持项目级 .qoder/commands/",
+        "Super Dev 已同时写入 .qoder/rules.md 与 .qoder/commands/super-dev.md"
+      ],
+      "host_protocol_mode": "official-skill",
+      "host_protocol_summary": "官方 commands + rules + skills",
+      "official_project_surfaces": [
+        ".qoder/rules.md",
+        ".qoder/commands/super-dev.md",
+        ".qoder/skills/super-dev-core/SKILL.md"
+      ],
+      "official_user_surfaces": [
+        "~/.qoder/commands/super-dev.md",
+        "~/.qoderwork/skills/super-dev-core/SKILL.md"
+      ],
+      "observed_compatibility_surfaces": [],
+      "usage_mode": "native-slash",
+      "primary_entry": "/super-dev \"<需求描述>\"（在 IDE Agent Chat 内）",
+      "trigger_command": "/super-dev \"<需求描述>\"",
+      "final_trigger": "/super-dev \"你的需求\"",
+      "trigger_context": "IDE Agent Chat",
+      "usage_location": "打开 Qoder IDE 的 Agent Chat，在当前项目内触发。",
+      "requires_restart_after_onboard": false,
+      "restart_required_label": "否",
+      "post_onboard_steps": [
+        "在 IDE Agent Chat 中执行 /super-dev。",
+        "保持研究、文档、Spec 与编码在同一上下文中连续完成。"
+      ],
+      "usage_notes": [
+        "Qoder IDE 当前优先按项目级 commands + rules + 宿主级 Skill 模式触发，可直接使用 /super-dev。",
+        "若新增命令未出现，重新打开项目或新开一个 Agent Chat。",
+        "官方文档已公开 .qoder/skills 与 ~/.qoderwork/skills。"
+      ],
+      "smoke_test_prompt": "/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\"",
+      "smoke_test_steps": [
+        "进入已接入 Super Dev 的项目目录或工作区。",
+        "确认当前 Agent Chat/Workflow 绑定的是目标项目。",
+        "在宿主正确的聊天/会话入口输入：/super-dev \"请先不要开始编码，只回复 SMOKE_OK，并确认已读取当前项目中的 Super Dev 规则。\""
+      ],
+      "smoke_success_signal": "宿主回复 SMOKE_OK，并明确表示已读取当前项目内的 Super Dev 规则/AGENTS/命令映射，且没有直接开始编码。",
+      "notes": "IDE 宿主优先通过 Agent Chat 触发；slash 负责触发，host skill 负责让宿主理解 Super Dev 流水线协议。"
+    }
+  }
+}

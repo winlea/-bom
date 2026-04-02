@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>获取零件尺寸信息</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .json-data {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>获取零件 Y1392191 的尺寸信息</h1>
+        <button onclick="fetchDimensions()">获取尺寸数据</button>
+        <div class="error" id="error"></div>
+        <div class="result">
+            <h2>尺寸信息</h2>
+            <div id="dimensionsList"></div>
+            <h2>原始JSON数据</h2>
+            <div class="json-data" id="jsonData"></div>
+        </div>
+    </div>
+
+    <script>
+        function fetchDimensions() {
+            const projectId = "358";
+            const partNumber = "Y1392191";
+            const url = `http://localhost:5000/api/dimensions/projects/${projectId}?part_number=${encodeURIComponent(partNumber)}`;
+
+            document.getElementById('error').textContent = '';
+            document.getElementById('dimensionsList').innerHTML = '<p>加载中...</p>';
+            document.getElementById('jsonData').textContent = '';
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayDimensions(data.data);
+                        document.getElementById('jsonData').textContent = JSON.stringify(data.data, null, 2);
+                    } else {
+                        document.getElementById('error').textContent = `错误: ${data.message}`;
+                        document.getElementById('dimensionsList').innerHTML = '';
+                        document.getElementById('jsonData').textContent = '';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('error').textContent = `请求失败: ${error.message}`;
+                    document.getElementById('dimensionsList').innerHTML = '';
+                    document.getElementById('jsonData').textContent = '';
+                });
+        }
+
+        function displayDimensions(dimensions) {
+            if (dimensions.length === 0) {
+                document.getElementById('dimensionsList').innerHTML = '<p>该零件暂无尺寸信息</p>';
+                return;
+            }
+
+            let html = `<p>共找到 ${dimensions.length} 条尺寸信息</p>`;
+
+            dimensions.forEach(dim => {
+                html += `<div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <strong>ID:</strong> ${dim.id}<br>
+                    <strong>组号:</strong> ${dim.groupNo}<br>
+                    <strong>类型:</strong> ${dim.dimensionType}<br>
+                    <strong>名义值:</strong> ${dim.nominalValue}<br>
+                    <strong>上公差:</strong> ${dim.upperTolerance}<br>
+                    <strong>下公差:</strong> ${dim.lowerTolerance}<br>
+                    <strong>公差值:</strong> ${dim.toleranceValue}<br>
+                    <strong>基准:</strong> ${dim.datum}<br>
+                    <strong>特性:</strong> ${dim.characteristic}<br>
+                    <strong>备注:</strong> ${dim.notes}<br>
+                </div>`;
+            });
+
+            document.getElementById('dimensionsList').innerHTML = html;
+        }
+    </script>
+</body>
+</html>

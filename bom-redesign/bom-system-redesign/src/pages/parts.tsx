@@ -23,6 +23,8 @@ import {
   Image as ImageIcon,
   FileText,
   Layers,
+  FileBarChart,
+  Loader2,
 } from 'lucide-react';
 import ImportModal from '@/components/import-modal';
 
@@ -64,12 +66,14 @@ function getQueryParam(key: string) {
   return url.searchParams.get(key);
 }
 
-// 解析图片地址（优先 base64，其次相对/绝对路径，最后回退占位）
+// 解析图片地址（优先使用后端返回的image_url，其次构建URL，最后回退占位）
 const PLACEHOLDER_IMG = '/static/placeholder.svg';
 function resolveImageSrc(pt: Part): string | null {
-  if ((pt as any).has_image === true && typeof pt.id === 'number') {
-    return `/api/parts/${pt.id}/image`;
+  // 优先使用后端返回的image_url
+  if (pt.image_url) {
+    return pt.image_url;
   }
+  // 其次构建URL
   if (typeof pt.id === 'number') {
     return `/api/parts/${pt.id}/image`;
   }
@@ -166,12 +170,14 @@ export default function PartsPage() {
       if (Array.isArray(j)) items = j;
       else if (j && Array.isArray(j.items)) items = j.items;
       else if (j && Array.isArray(j.data)) items = j.data;
+      else if (j && j.data && Array.isArray(j.data.items)) items = j.data.items;
       setProjects(items);
       if (!selectedProject && items.length > 0) {
         setSelectedProject(String(items[0].id));
       }
-    } catch (e) {
+    } catch (e: any) {
       setProjects([]);
+      alert('加载项目列表失败：' + (e?.message || e));
     }
   }
 
@@ -179,14 +185,26 @@ export default function PartsPage() {
     setLoading(true);
     try {
       const r = await fetch(`/api/parts?project_id=${projectId}`);
+      if (!r.ok) {
+        try {
+          const errorData = await r.json();
+          alert('加载零件列表失败：' + (errorData?.details || errorData?.error || r.status));
+        } catch (e) {
+          alert('加载零件列表失败：' + r.status);
+        }
+        setParts([]);
+        return;
+      }
       const j = await r.json().catch(() => null);
       let items: any[] = [];
       if (Array.isArray(j)) items = j;
       else if (j && Array.isArray(j.items)) items = j.items;
       else if (j && Array.isArray(j.data)) items = j.data;
+      else if (j && j.data && Array.isArray(j.data.items)) items = j.data.items;
       setParts(items);
-    } catch (e) {
+    } catch (e: any) {
       setParts([]);
+      alert('加载零件列表失败：' + (e?.message || e));
     } finally {
       setLoading(false);
     }
@@ -343,6 +361,88 @@ export default function PartsPage() {
         label: '产品净重(KG)',
         render: (pt: Part) =>
           pt.net_weight_kg ?? (pt as any)['产品净重(KG/PCS)'] ?? (pt as any).net_weight ?? '-',
+      },
+      {
+        key: 'process_capability',
+        label: '初始过程能力',
+        render: (pt: Part) => {
+          const handleGenerate = async (e: React.MouseEvent<HTMLButtonElement>) => {
+            const button = e.currentTarget;
+            const originalContent = button.innerHTML;
+            
+            // 设置加载状态
+            button.innerHTML = '<div class="flex items-center"><svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>生成中</div>';
+            button.disabled = true;
+            
+            try {
+              console.log('开始生成报告，零件ID：', pt.id);
+              console.log('零件信息：', pt);
+              
+              const apiUrl = '/api/process-capability/generate';
+              console.log('API URL：', apiUrl);
+              
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ part_id: pt.id }),
+              });
+              
+              console.log('API响应状态：', response.status);
+              console.log('API响应头：', response.headers);
+              
+              if (response.ok) {
+                // 处理文件下载
+                const blob = await response.blob();
+                console.log('文件大小：', blob.size);
+                
+                // 检查响应头中的文件名
+                const contentDisposition = response.headers.get('content-disposition');
+                console.log('Content-Disposition：', contentDisposition);
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `初始过程能力分析报告_${pt.part_number || pt.part_name}.xls`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                console.log('报告生成成功');
+              } else {
+                console.log('API响应错误：', response);
+                try {
+                  const errorData = await response.json();
+                  console.log('错误数据：', errorData);
+                  alert('生成报告失败：' + (errorData?.details || errorData?.error || '未知错误'));
+                } catch (e) {
+                  console.log('解析错误数据失败：', e);
+                  alert('生成报告失败：' + response.statusText);
+                }
+              }
+            } catch (error) {
+              console.log('网络错误：', error);
+              alert('生成报告失败：' + (error as any)?.message || '网络错误');
+            } finally {
+              // 恢复按钮状态
+              button.innerHTML = originalContent;
+              button.disabled = false;
+            }
+          };
+          
+          return (
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+              onClick={handleGenerate}
+            >
+              <FileBarChart size={14} className="mr-1" />
+              生成报告
+            </Button>
+          );
+        },
       },
     ],
     [navigate, selectedProject, projects]

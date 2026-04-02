@@ -82,7 +82,7 @@ def import_csv(file_bytes: bytes, project_id: int | None = None) -> Dict[str, An
     """
     f = TextIOWrapper(BytesIO(file_bytes), encoding="utf-8")
     reader = csv.DictReader(f)
-    
+
     # 构建表头映射，支持中文表头
     header_map: Dict[str, str] = {}
     for h in reader.fieldnames or []:
@@ -94,10 +94,10 @@ def import_csv(file_bytes: bytes, project_id: int | None = None) -> Dict[str, An
             # 否则使用标准化表头
             normalized = _normalize_header(h)
             header_map[normalized] = h
-    
+
     if "part_number" not in header_map:
         raise ValueError("未找到 '产品编号/part_number' 列，请检查表头")
-    
+
     # 为了保持兼容性，仍然构建原始的 headers 字典
     headers = {k: header_map[k] for k in header_map}
 

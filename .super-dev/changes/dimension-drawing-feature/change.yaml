@@ -1,0 +1,43 @@
+id: dimension-drawing-feature
+title: 尺寸绘制功能
+description: 实现一个尺寸绘制功能，能够根据尺寸组合数量将画布分成相应部分，并在不同部分绘制不同类型的尺寸数据
+author: Super Dev
+created_at: 2026-03-23
+status: proposed
+priority: high
+type: feature
+
+# 影响范围
+scope:
+  - frontend
+  - backend
+
+# 相关文档
+references:
+  - prd: output/dimension-drawing-feature-prd.md
+  - architecture: output/dimension-drawing-feature-architecture.md
+  - uiux: output/dimension-drawing-feature-uiux.md
+
+# 变更内容
+targets:
+  - path: bom-redesign/bom-system-redesign/src/components/dimension-drawing-canvas.tsx
+    type: new
+  - path: bom-redesign/bom-system-redesign/src/components/dimension-drawing-config.tsx
+    type: new
+  - path: bom-redesign/bom-system-redesign/src/components/dimension-drawing-preview.tsx
+    type: new
+  - path: bom-redesign/bom-system-redesign/src/pages/dimension-drawing.tsx
+    type: new
+  - path: bom_system/dimensions/api.py
+    type: modify
+  - path: bom_system/dimensions/services.py
+    type: modify
+
+# 验收标准
+acceptance_criteria:
+  - 能够根据尺寸数量自动分区画布
+  - 能够正确绘制不同类型的尺寸数据
+  - 能够处理空位置度的基准框绘制
+  - 能够正确对齐基准框
+  - 能够导出绘制结果为图片
+  - 能够保存绘制配置和结果

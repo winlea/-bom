@@ -96,11 +96,15 @@ export default function ImportModal({
           ? data
           : data && Array.isArray(data.items)
             ? data.items
-            : [];
+            : data && data.data && Array.isArray(data.data.items)
+              ? data.data.items
+              : [];
+        console.log('获取到的项目列表:', list);
         const opts = list.map((p: any) => ({ id: String(p.id), name: p.name || `项目 ${p.id}` }));
         setProjects(opts);
         if (!selectedProject && opts.length > 0) setSelectedProject(opts[0].id);
       } catch (e) {
+        console.error('获取项目列表失败:', e);
         setProjects([]);
       }
     }
@@ -269,7 +273,7 @@ export default function ImportModal({
               setError(`创建新项目失败: ${responseText}`);
             }
           } catch (err) {
-            setError(`创建新项目失败: ${err.message || String(err)}`);
+            setError(`创建新项目失败: ${(err as Error).message || String(err)}`);
           }
           setLoading(false);
           return;
@@ -314,9 +318,10 @@ export default function ImportModal({
     try {
       const fd = new FormData();
       fd.append('file', file);
+      fd.append('project_id', projectIdToUse);
       fd.append('mapping', JSON.stringify(mapping || {}));
 
-      const response = await fetch(`/api/projects/${projectIdToUse}/import`, {
+      const response = await fetch('/api/import/bom', {
         method: 'POST',
         body: fd,
       });
@@ -387,7 +392,7 @@ export default function ImportModal({
               setError(`导入失败：HTTP ${response.status} ${responseText}`);
             }
           } catch (err) {
-            setError(`导入失败：${err.message || String(err)}`);
+            setError(`导入失败：${(err as Error).message || String(err)}`);
           }
         }
     } catch (e: any) {

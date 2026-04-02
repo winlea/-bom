@@ -48,6 +48,43 @@ const measure = (
   return { width, ascent, descent, height: ascent + descent };
 };
 
+const isGeometric = (type: string) =>
+  type === 'position' ||
+  type === 'profile_surface' ||
+  type === 'flatness' ||
+  type === 'coplanarity' ||
+  type === 'straightness' ||
+  type === 'roundness' ||
+  type === 'cylindricity' ||
+  type === 'profile_line' ||
+  type === 'parallelism' ||
+  type === 'perpendicularity' ||
+  type === 'angularity' ||
+  type === 'concentricity' ||
+  type === 'symmetry' ||
+  type === 'circular_runout' ||
+  type === 'total_runout';
+
+const buildToleranceText = (upper: string, lower: string): string | '' => {
+  if (!upper && !lower) return '';
+  const up = parseFloat(upper || '0');
+  const lo = parseFloat(lower || '0');
+
+  if (upper && lower && Math.abs(up) === Math.abs(lo) && up > 0 && lo < 0) {
+    return `±${Math.abs(up)}`;
+  }
+
+  if (upper && lower) {
+    const upT = up >= 0 ? `+${up}` : `${up}`;
+    const loT = lo >= 0 ? `+${lo}` : `${lo}`;
+    return `${upT}/${loT}`;
+  }
+
+  if (upper) return up >= 0 ? `+${up}` : `${up}`;
+  if (lower) return lo >= 0 ? `+${lo}` : `${lo}`;
+  return '';
+};
+
 export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
   dimensionType,
   nominalValue,
@@ -63,7 +100,6 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
 
   useEffect(() => {
     generateDimensionImage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dimensionType, nominalValue, toleranceValue, upperTolerance, lowerTolerance, datum]);
 
   const getDimensionSymbol = (type: string): string => {
@@ -106,20 +142,32 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // 先设置一个足够大的画布用于测量
+    canvas.width = 400;
+    canvas.height = 150;
+
     // 布局参数（缩略图）
-    const paddingX = 12;
-    const paddingY = 10;
-    const gapX = 6;
-    const mainFontSize = 20;
-    const tolFontSize = 16;
+    const paddingX = 20;
+    const paddingY = 15;
+    const gapX = 5;
+    const mainFontSize = 13;
+    const tolFontSize = 9;
 
     const symbol = getDimensionSymbol(dimensionType);
 
     let contentWidth = 0;
     let contentHeight = 0;
 
+    // 计算几何公差的实际公差值
+    const getActualToleranceValue = () => {
+      if (toleranceValue) return toleranceValue;
+      const tolText = buildToleranceText(upperTolerance, lowerTolerance);
+      return tolText;
+    };
+
     if (isGeometric(dimensionType)) {
       // 几何公差：固定框布局
+      const actualToleranceValue = getActualToleranceValue();
       const { width, height } = calcGeoBoxSize(dimensionType, datum);
       contentWidth = width;
       contentHeight = height;
@@ -142,9 +190,9 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
       contentHeight = ascentMax + descentMax;
     }
 
-    // 画布最终尺寸，保证最小可视区
-    canvas.width = Math.max(Math.ceil(contentWidth + paddingX * 2), 100);
-    canvas.height = Math.max(Math.ceil(contentHeight + paddingY * 2), 50);
+    // 画布最终尺寸，保证最小可视区，添加额外的安全边距
+    canvas.width = Math.max(Math.ceil(contentWidth + paddingX * 2 + 20), 180);
+    canvas.height = Math.max(Math.ceil(contentHeight + paddingY * 2 + 10), 80);
 
     // 背景
     ctx.fillStyle = '#ffffff';
@@ -157,7 +205,8 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
     const startX = paddingX;
 
     if (isGeometric(dimensionType)) {
-      drawGeometricToleranceLeft(ctx, dimensionType, toleranceValue, datum, startX, paddingY);
+      const actualToleranceValue = getActualToleranceValue();
+      drawGeometricToleranceLeft(ctx, dimensionType, actualToleranceValue, datum, startX, paddingY);
     } else {
       // 普通尺寸：左对齐
       const nominal = nominalValue || '12';
@@ -186,50 +235,15 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
     setImageData(canvas.toDataURL('image/png'));
   };
 
-  const isGeometric = (type: string) =>
-    type === 'position' ||
-    type === 'profile_surface' ||
-    type === 'flatness' ||
-    type === 'coplanarity' ||
-    type === 'straightness' ||
-    type === 'roundness' ||
-    type === 'cylindricity' ||
-    type === 'profile_line' ||
-    type === 'parallelism' ||
-    type === 'perpendicularity' ||
-    type === 'angularity' ||
-    type === 'concentricity' ||
-    type === 'symmetry' ||
-    type === 'circular_runout' ||
-    type === 'total_runout';
 
-  const buildToleranceText = (upper: string, lower: string): string | '' => {
-    if (!upper && !lower) return '';
-    const up = parseFloat(upper || '0');
-    const lo = parseFloat(lower || '0');
-
-    if (upper && lower && Math.abs(up) === Math.abs(lo) && up > 0 && lo < 0) {
-      return `±${Math.abs(up)}`;
-    }
-
-    if (upper && lower) {
-      const upT = up >= 0 ? `+${up}` : `${up}`;
-      const loT = lo >= 0 ? `+${lo}` : `${lo}`;
-      return `${upT}/${loT}`;
-    }
-
-    if (upper) return up >= 0 ? `+${up}` : `${up}`;
-    if (lower) return lo >= 0 ? `+${lo}` : `${lo}`;
-    return '';
-  };
 
   const calcGeoBoxSize = (type: string, datumRef: string | undefined) => {
     // 缩略图几何公差框尺寸
-    const boxHeight = 35;
-    const symbolBoxWidth = 35;
-    const toleranceBoxWidth = 55;
-    const datumBoxWidth = 30;
-    const datums = datumRef ? datumRef.split('').filter(d => d.trim()) : [];
+    const boxHeight = 30;
+    const symbolBoxWidth = 30;
+    const toleranceBoxWidth = 45;
+    const datumBoxWidth = 26;
+    const datums = datumRef ? datumRef.split('-').filter(d => d.trim()) : [];
     const width = symbolBoxWidth + toleranceBoxWidth + datums.length * datumBoxWidth;
     const height = boxHeight;
     return { width, height, symbolBoxWidth, toleranceBoxWidth, datumBoxWidth, boxHeight };
@@ -248,7 +262,7 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
       datumRef
     );
     const symbol = getDimensionSymbol(type);
-    const datums = datumRef ? datumRef.split('').filter(d => d.trim()) : [];
+    const datums = datumRef ? datumRef.split('-').filter(d => d.trim()) : [];
 
     let x = startX;
 
@@ -257,7 +271,7 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
 
     // 符号框
     ctx.strokeRect(x, startY, symbolBoxWidth, boxHeight);
-    setFont(ctx, 22, 'bold');
+    setFont(ctx, 16, 'bold');
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(symbol, x + symbolBoxWidth / 2, startY + boxHeight / 2);
@@ -265,13 +279,13 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
 
     // 公差框
     ctx.strokeRect(x, startY, toleranceBoxWidth, boxHeight);
-    setFont(ctx, 18, 'normal');
+    setFont(ctx, 12, 'normal');
     ctx.fillText(tolerance || '', x + toleranceBoxWidth / 2, startY + boxHeight / 2);
     x += toleranceBoxWidth;
 
     // 基准框
     if (datums.length > 0) {
-      setFont(ctx, 18, 'bold');
+      setFont(ctx, 12, 'bold');
       datums.forEach(d => {
         ctx.strokeRect(x, startY, datumBoxWidth, boxHeight);
         ctx.fillText(d, x + datumBoxWidth / 2, startY + boxHeight / 2);
@@ -283,7 +297,7 @@ export const DimensionImageGenerator: React.FC<DimensionImageProps> = ({
   return (
     <div
       className={`relative group ${className}`}
-      style={{ minWidth: '0px', minHeight: '60px', overflow: 'visible' }}
+      style={{ minWidth: '0px', minHeight: '60px', overflow: 'hidden' }}
     >
       <canvas ref={canvasRef} className="hidden" />
       {imageData && (
@@ -396,7 +410,7 @@ export const DimensionPreviewModal: React.FC<DimensionPreviewModalProps> = ({
       const symbolBoxWidth = 60;
       const toleranceBoxWidth = 100;
       const datumBoxWidth = 50;
-      const datums = datum ? datum.split('').filter(d => d.trim()) : [];
+      const datums = datum ? datum.split('-').filter(d => d.trim()) : [];
       contentWidth = symbolBoxWidth + toleranceBoxWidth + datums.length * datumBoxWidth;
       contentHeight = boxHeight;
 
@@ -471,7 +485,7 @@ export const DimensionPreviewModal: React.FC<DimensionPreviewModalProps> = ({
     const toleranceBoxWidth = 100;
     const datumBoxWidth = 50;
 
-    const datums = datumRef ? datumRef.split('').filter(d => d.trim()) : [];
+    const datums = datumRef ? datumRef.split('-').filter(d => d.trim()) : [];
     let x = startX;
 
     ctx.strokeStyle = '#1e293b';

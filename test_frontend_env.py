@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 # 检查前端项目目录
 frontend_dir = "bom-redesign/bom-system-redesign"
@@ -16,13 +16,13 @@ else:
 package_json_path = os.path.join(frontend_dir, "package.json")
 if os.path.exists(package_json_path):
     print(f"✅ package.json文件存在")
-    with open(package_json_path, 'r', encoding='utf-8') as f:
+    with open(package_json_path, "r", encoding="utf-8") as f:
         try:
             package_data = json.load(f)
             print(f"  项目名称: {package_data.get('name')}")
             print(f"  版本: {package_data.get('version')}")
             print(f"  脚本命令:")
-            for script_name, script_cmd in package_data.get('scripts', {}).items():
+            for script_name, script_cmd in package_data.get("scripts", {}).items():
                 print(f"    - {script_name}: {script_cmd}")
         except json.JSONDecodeError:
             print("❌ 错误: package.json文件格式不正确")

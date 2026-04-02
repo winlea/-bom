@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,  // 更新为当前使用的端口
+    port: 5176,  // 更新为当前使用的端口
     proxy: {
       "/api": {
         target: "http://localhost:5000",

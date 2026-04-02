@@ -81,7 +81,7 @@ export default function QualificationRatePage() {
       }
     } catch (err) {
       console.error('获取项目列表失败:', err);
-      setError('获取项目列表失败: ' + err.message);
+      setError('获取项目列表失败: ' + (err as Error).message);
     }
   };
 

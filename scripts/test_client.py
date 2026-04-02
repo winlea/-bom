@@ -14,7 +14,7 @@ def main():
             resp = urllib.request.urlopen(BASE + "/health", timeout=2)
             print("HEALTH", resp.status)
             break
-        except Exception as e:
+        except Exception:
             time.sleep(0.5)
     else:
         raise SystemExit("Server not healthy")

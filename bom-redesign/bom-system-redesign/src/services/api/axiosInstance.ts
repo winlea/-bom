@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 // 创建axios实例
 const axiosInstance: AxiosInstance = axios.create({
@@ -11,7 +11,7 @@ const axiosInstance: AxiosInstance = axios.create({
 
 // 请求拦截器
 axiosInstance.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     // 可以在这里添加认证信息，如token
     // const token = localStorage.getItem('token');
     // if (token) {
@@ -35,7 +35,7 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       // 服务器返回错误
       const status = error.response.status;
-      const data = error.response.data;
+      const data = error.response.data as any;
       
       // 提取详细错误信息
       const errorMessage = data?.message || data?.error || 'An error occurred';

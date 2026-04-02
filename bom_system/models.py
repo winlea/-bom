@@ -12,12 +12,14 @@ db = SQLAlchemy()
 def import_all_models():
     """导入所有模型以确保它们被SQLAlchemy识别"""
     try:
-        print('导入 Dimension 模型...')
+        print("导入 Dimension 模型...")
         from bom_system.dimensions.models import Dimension
-        print('Dimension 模型导入成功!')
+
+        print("Dimension 模型导入成功!")
     except ImportError as e:
-        print(f'Dimension 模型导入失败: {e}')
+        print(f"Dimension 模型导入失败: {e}")
         import traceback
+
         traceback.print_exc()
     # 确保当前文件中的模型也被识别
     # Project, BomTable, ImportLog 等模型已经在当前文件中定义
@@ -32,6 +34,17 @@ class Project(db.Model):
     description = db.Column(db.String(255))
     status = db.Column(db.String(30), default="created")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 新增项目信息字段
+    supplier_name = db.Column(db.String(200))  # 供方名称
+    address = db.Column(db.String(255))  # 街道地址
+    supplier_code = db.Column(db.String(100))  # 供方代码
+    customer_name = db.Column(db.String(200))  # 客户名称
+    customer_purchase = db.Column(db.String(200))  # 客户采购
+    quality_engineer = db.Column(db.String(100))  # 质量工程师名字
+    quality_engineer_signature = db.Column(db.LargeBinary)  # 质量工程师签名图片
+    phone = db.Column(db.String(50))  # 电话
+    email = db.Column(db.String(100))  # 邮箱
 
     # relationship to parts
     parts = db.relationship(
@@ -99,3 +112,26 @@ class BomTable(db.Model):
 
     def __repr__(self) -> str:
         return f"<BOM id={self.id} part_number={self.part_number}>"
+
+
+class DrawingChange(db.Model):
+    __tablename__ = "drawing_changes"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id", ondelete="CASCADE"), index=True, nullable=False)
+    part_id = db.Column(db.Integer, db.ForeignKey("bom_table.id", ondelete="CASCADE"), index=True, nullable=False)
+    part_name = db.Column(db.String(200), nullable=False)
+    part_number = db.Column(db.String(100), nullable=False, index=True)
+    drawing_number = db.Column(db.String(100), nullable=False)
+    engineering_change_level = db.Column(db.String(50), nullable=False)
+    drawing_change_version = db.Column(db.String(50), nullable=False)
+    cr_number = db.Column(db.String(100), nullable=False)
+    change_count = db.Column(db.Integer, nullable=False, default=1)
+    change_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # 关系
+    project = db.relationship("Project", backref="drawing_changes")
+    part = db.relationship("BomTable", backref="drawing_changes")
+
+    def __repr__(self) -> str:
+        return f"<DrawingChange id={self.id} part_number={self.part_number}>"

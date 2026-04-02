@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
   BarChart3,
   Users,
   FileSpreadsheet,
+  Activity,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -55,6 +56,20 @@ export default function HomePage() {
       icon: <FileSpreadsheet className="h-10 w-10 text-emerald-600" />,
       path: '/ods',
       color: 'bg-emerald-50',
+    },
+    {
+      title: 'PSW生成器',
+      description: '生成零件保证书文档',
+      icon: <FileSpreadsheet className="h-10 w-10 text-blue-600" />,
+      path: '/psw',
+      color: 'bg-blue-50',
+    },
+    {
+      title: '初始能力分析',
+      description: '生成初始过程能力分析报告',
+      icon: <Activity className="h-10 w-10 text-purple-600" />,
+      path: '/process-capability',
+      color: 'bg-purple-50',
     },
     {
       title: '数据导入',
@@ -98,14 +113,39 @@ export default function HomePage() {
       path: '/settings',
       color: 'bg-slate-50',
     },
+    {
+      title: '图纸变更',
+      description: '管理图纸变更信息',
+      icon: <FileText className="h-10 w-10 text-red-600" />,
+      path: '/drawing-change',
+      color: 'bg-red-50',
+    },
   ];
 
-  // 最近项目数据（示例）
-  const recentProjects = [
-    { id: 1, name: '发动机盖项目', parts_count: 45, updated_at: '2023-06-15' },
-    { id: 2, name: '车门组件', parts_count: 32, updated_at: '2023-06-10' },
-    { id: 3, name: '底盘系统', parts_count: 78, updated_at: '2023-06-05' },
-  ];
+  // 最近项目数据
+  const [recentProjects, setRecentProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // 从后端API获取最近项目数据
+  useEffect(() => {
+    const fetchRecentProjects = async () => {
+      try {
+        const response = await fetch('/api/dashboard/recent');
+        if (response.ok) {
+          const data = await response.json();
+          setRecentProjects(data.recent_projects || []);
+        } else {
+          console.error('获取最近项目失败');
+        }
+      } catch (error) {
+        console.error('获取最近项目错误:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentProjects();
+  }, []);
 
   return (
     <Layout>
@@ -161,24 +201,34 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentProjects.map(project => (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 cursor-pointer"
-                      onClick={() => navigate(`/projects/${project.id}`)}
-                    >
-                      <div className="flex items-center">
-                        <div className="bg-blue-100 p-2 rounded-md mr-3">
-                          <FolderOpen className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">{project.name}</h4>
-                          <p className="text-sm text-slate-500">{project.parts_count} 个零件</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-slate-500">更新于 {project.updated_at}</div>
+                  {loading ? (
+                    <div className="flex justify-center items-center p-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                     </div>
-                  ))}
+                  ) : recentProjects.length > 0 ? (
+                    recentProjects.map(project => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 cursor-pointer"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      >
+                        <div className="flex items-center">
+                          <div className="bg-blue-100 p-2 rounded-md mr-3">
+                            <FolderOpen className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{project.name}</h4>
+                            <p className="text-sm text-slate-500">{project.supplier_name || '无供应商'} - {project.customer_name || '无客户'}</p>
+                          </div>
+                        </div>
+                        <div className="text-sm text-slate-500">{project.created_at ? new Date(project.created_at).toLocaleDateString() : '未知'}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center p-8 text-slate-500">
+                      暂无项目数据
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter>
@@ -232,6 +282,22 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   className="w-full justify-start"
+                  onClick={() => navigate('/psw')}
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-600" />
+                  生成PSW文档
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/process-capability')}
+                >
+                  <Activity className="mr-2 h-4 w-4 text-purple-600" />
+                  初始能力分析
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
                   onClick={() => navigate('/qualification-rate')}
                 >
                   <BarChart3 className="mr-2 h-4 w-4 text-amber-600" />
@@ -244,6 +310,14 @@ export default function HomePage() {
                 >
                   <BarChart3 className="mr-2 h-4 w-4 text-purple-600" />
                   查看数据报表
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/drawing-change')}
+                >
+                  <FileText className="mr-2 h-4 w-4 text-red-600" />
+                  图纸变更管理
                 </Button>
               </CardContent>
             </Card>
