@@ -21,6 +21,8 @@ from openpyxl.styles import Alignment, Color, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
+from bom_system.database.session import get_db_session
+
 
 # 可选：文本渲染为 PNG（DRAW_DIM 无图时回退）
 try:
@@ -486,6 +488,7 @@ def inspect_template():
 
 @templates_bp.post("/fill")
 def fill_template():
+    session = get_db_session()
     data = request.get_json(silent=True) or {}
     rel_path = data.get("templatePath") or request.args.get("path") or "templates/WZ1D_standard_template.xlsx"
     project_id = data.get("projectId") or request.args.get("projectId")
@@ -530,7 +533,7 @@ def fill_template():
     ws, sample_row, c1, c2 = named
 
     # 读取尺寸数据并分组为“组号-序号”
-    svc = DimensionService(db.session)
+    svc = DimensionService(session)
     part_id = data.get("partId") or request.args.get("partId")
     if part_id:
         dims = svc.get_dimensions_by_part(part_id)

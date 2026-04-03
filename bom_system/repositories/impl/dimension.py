@@ -24,18 +24,24 @@ class DimensionRepository(IDimensionRepository):
     def get_by_id(self, dimension_id: int) -> Optional[Any]:
         """根据ID获取维度记录"""
         return (
-            self.session.query(Dimension).filter(Dimension.id == dimension_id).first()
+            self.session.query(Dimension)
+            .filter(Dimension.id == dimension_id)
+            .first()
         )
 
     def get_by_part(self, part_id: str) -> List[Any]:
         """根据零件ID获取维度记录"""
-        return self.session.query(Dimension).filter(Dimension.partId == part_id).all()
+        return (
+            self.session.query(Dimension)
+            .filter(Dimension.part_id == part_id)
+            .all()
+        )
 
     def get_by_project(self, project_id: str) -> List[Any]:
         """根据项目ID获取维度记录"""
         return (
             self.session.query(Dimension)
-            .filter(Dimension.projectId == project_id)
+            .filter(Dimension.project_id == project_id)
             .all()
         )
 
@@ -45,7 +51,8 @@ class DimensionRepository(IDimensionRepository):
         return (
             self.session.query(Dimension)
             .filter(
-                Dimension.projectId == project_id, Dimension.characteristic.like(like)
+                Dimension.project_id == project_id,
+                Dimension.characteristic.like(like),
             )
             .all()
         )
@@ -75,7 +82,7 @@ class DimensionRepository(IDimensionRepository):
         """获取下一个组号"""
         max_group = (
             self.session.query(Dimension)
-            .filter(Dimension.projectId == project_id)
+            .filter(Dimension.project_id == project_id)
             .with_entities(Dimension.group_no)
             .order_by(Dimension.group_no.desc())
             .first()
@@ -86,6 +93,9 @@ class DimensionRepository(IDimensionRepository):
         """根据组号获取维度记录"""
         return (
             self.session.query(Dimension)
-            .filter(Dimension.projectId == project_id, Dimension.group_no == group_no)
+            .filter(
+                Dimension.project_id == project_id,
+                Dimension.group_no == group_no,
+            )
             .all()
         )

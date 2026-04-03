@@ -8,7 +8,8 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .models import BomTable, db
-from .services import _validate_image_bytes, save_base64_image, save_url_image
+from .services import _validate_image_bytes
+
 
 # 网络请求默认超时（秒）
 HTTP_FETCH_TIMEOUT = 8
@@ -177,12 +178,12 @@ def import_csv(file_bytes: bytes, project_id: int | None = None) -> Dict[str, An
             image_url=img_url_to_save,
         )
 
-        db.session.add(rec)
+        session.add(rec)
         try:
-            db.session.commit()
+            session.commit()
             created += 1
         except Exception as e:
-            db.session.rollback()
+            session.rollback()
             errors.append(f"row {i}: db commit failed: {e}")
 
     return {"created": created, "errors": errors}
@@ -203,7 +204,7 @@ def _find_header_row(ws: Worksheet, max_scan: int = 50) -> int:
 
 
 def import_xlsx(file_bytes: bytes, project_id: int | None = None) -> Dict[str, Any]:
-    print(f"DEBUG: import_xlsx called with project_id: {project_id}")
+    logger.debug("DEBUG: import_xlsx called with project_id: {project_id}")
     wb = load_workbook(BytesIO(file_bytes), data_only=True)
     ws = wb.active
 
@@ -443,12 +444,12 @@ def import_xlsx(file_bytes: bytes, project_id: int | None = None) -> Dict[str, A
             image_url=img_url_to_save,
         )
 
-        db.session.add(rec)
+        session.add(rec)
         try:
-            db.session.commit()
+            session.commit()
             created += 1
         except Exception as e:
-            db.session.rollback()
+            session.rollback()
             errors.append(f"row {i}: {e}")
 
     return {"created": created, "errors": errors}

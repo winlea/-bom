@@ -1,12 +1,14 @@
+import logging
 import os
 from io import BytesIO
 from datetime import datetime
 
 from flask import Blueprint, request, send_file
 from openpyxl import load_workbook
+from sqlalchemy import or_, and_, text
 
 from .importer import import_csv, import_xlsx
-from .models import BomTable, ImportLog, Project, DrawingChange, db
+from .models import BomTable, ImportLog, Project, DrawingChange
 from .api.response import APIResponse
 from .services import (
     get_effective_image_bytes,
@@ -18,6 +20,11 @@ from .templates.dynamic_ods_generator import (
     DynamicODSGenerator,
     create_simple_ods_from_data,
 )
+
+logger = logging.getLogger(__name__)
+
+from .database.session import get_db_session
+from bom_system.config import PSW_TEMPLATE_PATH, PROCESS_CAPABILITY_TEMPLATE_PATH  # noqa: E402
 
 api_bp = Blueprint("api", __name__)
 
@@ -145,15 +152,15 @@ def import_bom():
                 errors_count=len(result.get("errors", []) or []),
                 message="; ".join(result.get("errors", []) or []),
             )
-            db.add(log)
+            session = get_db_session()
+            session.add(log)
             if project_id:
-                proj = Project.query.get(project_id)
+                proj = session.query(Project).get(project_id)
                 if proj and proj.status == "created" and result.get("created", 0) > 0:
                     proj.status = "imported"
-            db.commit()
         except Exception as e:
             # 记录日志失败不影响导入结果
-            print(f"记录导入日志失败: {str(e)}")
+            logger.debug("记录导入日志失败: {str(e)}")
 
         return APIResponse.success(
             data={"status": "success", **result}
@@ -175,7 +182,8 @@ def list_items():
         limit = 20
     limit = max(1, min(100, limit))
 
-    query = BomTable.query
+    session = get_db_session()
+    query = session.query(BomTable)
     if q:
         like = f"%{q}%"
         query = query.filter(BomTable.part_number.like(like))
@@ -209,59 +217,21 @@ def list_parts():
 
     q = (request.args.get("q") or "").strip()
 
-    # 打印查询参数
-    print(f"查询参数: project_id={project_id}, q={q}")
+    session = get_db_session()
+    query = session.query(BomTable)
 
-    # 打印BomTable的表名
-    print(f"BomTable表名: {BomTable.__tablename__}")
-
-    # 直接执行SQL查询
-    from sqlalchemy import text
-    with db.session.begin():
-        result = db.session.execute(text("SELECT * FROM bom_table WHERE project_id = :project_id LIMIT 5"), {"project_id": project_id})
-        rows = result.fetchall()
-        print(f"直接SQL查询结果: {len(rows)} 条记录")
-        for row in rows:
-            print(f"记录: id={row.id}, part_number={row.part_number}, project_id={row.project_id}")
-
-    query = BomTable.query
-
-    # Filter by project_id if provided
     if project_id:
-        print(f"按project_id={project_id}过滤")
         query = query.filter(BomTable.project_id == project_id)
 
-    # Filter by search term if provided
     if q:
         like = f"%{q}%"
         query = query.filter(BomTable.part_number.like(like))
 
-    # Get all matching parts
-    # 先不排序，直接查询
-    rows = query.all()
-    print(f"查询到 {len(rows)} 条记录（未排序）")
-    
-    # 尝试排序
-    try:
-        rows_sorted = query.order_by(BomTable.bom_sort.asc(), BomTable.created_at.desc()).all()
-        print(f"排序后查询到 {len(rows_sorted)} 条记录")
-        rows = rows_sorted
-    except Exception as e:
-        print(f"排序失败: {str(e)}")
-        # 排序失败时使用未排序的结果
-        pass
+    rows = query.order_by(BomTable.bom_sort.asc(), BomTable.created_at.desc()).all()
 
-    # 打印原始查询结果
-    print(f"原始查询结果: {len(rows)} 条记录")
-    for i, part in enumerate(rows[:5]):
-        print(f"  记录{i+1}: id={part.id}, part_number={part.part_number}, project_id={part.project_id}, sequence={part.sequence}, created_at={part.created_at}")
-
-    # 去重：按project_id、part_number和sequence组合分组，只保留最新的记录
-    # 序号不同的零件视为不同的零件
+    # 去重：按(project_id, part_number, sequence)分组，只保留最新记录
     unique_parts = {}
     for part in rows:
-        # 使用(project_id, part_number, sequence)作为键，确保不同序号的零件不被去重
-        # 处理sequence为None的情况
         sequence = part.sequence or ""
         key = (part.project_id, part.part_number, sequence)
         if key not in unique_parts:
@@ -269,11 +239,7 @@ def list_parts():
         elif part.created_at and unique_parts[key].created_at and part.created_at > unique_parts[key].created_at:
             unique_parts[key] = part
 
-    # 转换为列表
     unique_rows = list(unique_parts.values())
-    print(f"去重后结果: {len(unique_rows)} 条记录")
-    for i, part in enumerate(unique_rows[:5]):
-        print(f"  去重后记录{i+1}: id={part.id}, part_number={part.part_number}, project_id={part.project_id}, sequence={part.sequence}")
 
     def ser_part(r: BomTable):
         # 构建图片URL
@@ -309,7 +275,8 @@ def list_parts():
 def get_part_image(part_id):
     """获取零件图片"""
     try:
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         if not part:
             return APIResponse.not_found(
                 message="Part not found"
@@ -321,34 +288,19 @@ def get_part_image(part_id):
             )
 
         # 尝试检测图片类型
-        try:
-            import imghdr
-            image_type = imghdr.what(None, part.image_data)
-            if not image_type:
-                image_type = "png"  # 默认类型
-        except Exception as img_err:
-            print(f"图片类型检测错误: {img_err}")
-            image_type = "png"  # 出错时使用默认类型
-
-        # 尝试创建BytesIO对象
-        try:
-            from io import BytesIO
-            img_data = BytesIO(part.image_data)
-        except Exception as io_err:
-            print(f"BytesIO创建错误: {io_err}")
-            return APIResponse.internal_server_error(
-                message=f"Image data error: {str(io_err)}",
-                errors={"error": "image data error"}
-            )
+        import imghdr
+        image_type = imghdr.what(None, part.image_data)
+        if not image_type:
+            image_type = "png"
 
         return send_file(
-            img_data,
+            BytesIO(part.image_data),
             mimetype=f"image/{image_type}",
             as_attachment=False,
             download_name=f"part_{part_id}.{image_type}",
         )
     except Exception as e:
-        print(f"获取图片失败: {e}")
+        logger.debug("获取图片失败: {e}")
         return APIResponse.internal_server_error(
             message=f"Get part image failed: {str(e)}",
             errors={"error": "get part image failed"}
@@ -391,8 +343,8 @@ def create_part():
             part_category=data.get("part_category"),
         )
 
-        db.add(part)
-        db.commit()
+        session = get_db_session()
+        session.add(part)
 
         return APIResponse.created(
             data={
@@ -406,7 +358,7 @@ def create_part():
             }
         )
     except Exception as e:
-        db.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"Create part failed: {str(e)}",
             errors={"error": "create part failed"}
@@ -423,7 +375,8 @@ def update_part(part_id):
                 message="request body required"
             )
 
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         if not part:
             return APIResponse.not_found(
                 message="part not found"
@@ -451,8 +404,6 @@ def update_part(part_id):
         if "part_category" in data:
             part.part_category = data["part_category"]
 
-        db.commit()
-
         return APIResponse.success(
             data={
                 "id": part.id,
@@ -463,7 +414,7 @@ def update_part(part_id):
             }
         )
     except Exception as e:
-        db.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"Update part failed: {str(e)}",
             errors={"error": "update part failed"}
@@ -474,21 +425,21 @@ def update_part(part_id):
 def delete_part(part_id):
     """Delete a part"""
     try:
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         if not part:
             return APIResponse.not_found(
                 message="part not found"
             )
 
-        db.delete(part)
-        db.commit()
+        session.delete(part)
 
         return APIResponse.success(
             message="part deleted",
             data={"status": "success"}
         )
     except Exception as e:
-        db.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"Delete part failed: {str(e)}",
             errors={"error": "delete part failed"}
@@ -499,7 +450,8 @@ def delete_part(part_id):
 def get_part(part_id):
     """Get a single part"""
     try:
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         if not part:
             return APIResponse.not_found(
                 message="part not found"
@@ -555,7 +507,8 @@ def generate_report():
             )
 
         # Get project information
-        project = Project.query.get(project_id)
+        session = get_db_session()
+        project = session.query(Project).get(project_id)
         if not project:
             return APIResponse.not_found(
                 message="project not found"
@@ -563,7 +516,7 @@ def generate_report():
 
         # Get project parts
         parts = (
-            BomTable.query.filter_by(project_id=project_id)
+            session.query(BomTable).filter_by(project_id=project_id)
             .order_by(BomTable.bom_sort.asc(), BomTable.created_at.desc())
             .all()
         )
@@ -614,7 +567,7 @@ def generate_report():
         )
 
     except Exception as e:
-        print(f"Report generation error: {str(e)}")
+        logger.debug("Report generation error: {str(e)}")
         import traceback
         traceback.print_exc()
         return APIResponse.internal_server_error(
@@ -648,7 +601,8 @@ def generate_psw():
             )
 
         # Get part information
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         if not part:
             return APIResponse.not_found(
                 message="part not found"
@@ -657,12 +611,12 @@ def generate_psw():
         # Get project information
         project = None
         if part.project_id:
-            project = Project.query.get(part.project_id)
+            project = session.query(Project).get(part.project_id)
             if not project:
-                print(f"Project not found for part {part_id}")
+                logger.debug("Project not found for part {part_id}")
 
-        # 模板文件路径 - 直接使用新模板文件
-        template_file = r"C:\Users\Administrator\univer\PSW_Template.xlsx"
+        # 模板文件路径 - 从配置读取
+        template_file = PSW_TEMPLATE_PATH
         if not os.path.exists(template_file):
             return APIResponse.internal_server_error(
                 message="PSW template file not found"
@@ -773,9 +727,9 @@ def generate_psw():
 
                         # 删除临时文件
                         os.unlink(temp_img_path)
-                        print("签名图片添加成功")
+                        logger.debug("签名图片添加成功")
                     except Exception as e:
-                        print(f"添加签名图片失败: {str(e)}")
+                        logger.debug("添加签名图片失败: {str(e)}")
 
             # 填充字段
             for (row, col), value in fields_to_fill.items():
@@ -783,7 +737,7 @@ def generate_psw():
                     # 直接设置单元格值，Excel会自动保留格式
                     ws.Cells(row, col).Value = value
                 except Exception as e:
-                    print(f"填充单元格({row},{col})失败: {str(e)}")
+                    logger.debug("填充单元格({row},{col})失败: {str(e)}")
 
             # 保存并关闭工作簿
             wb.Save()
@@ -812,7 +766,7 @@ def generate_psw():
         )
 
     except Exception as e:
-        print(f"PSW generation error: {e}")
+        logger.debug("PSW generation error: {e}")
         import traceback
         traceback.print_exc()
         return APIResponse.internal_server_error(
@@ -863,8 +817,8 @@ def create_drawing_change():
             change_date=datetime.strptime(change_date, "%Y-%m-%d").date()
         )
 
-        db.add(drawing_change)
-        db.commit()
+        session = get_db_session()
+        session.add(drawing_change)
 
         return APIResponse.created(
             data={
@@ -881,7 +835,7 @@ def create_drawing_change():
             }
         )
     except Exception as e:
-        db.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"Create drawing change failed: {str(e)}",
             errors={"error": "create drawing change failed"}
@@ -929,7 +883,8 @@ def get_ods_preview(part_id):
         
         # 首先获取零件信息
         from bom_system.models import BomTable
-        part = BomTable.query.get(part_id)
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
         
         if part:
             # 获取零件信息，使用零件编号查询尺寸数据
@@ -937,27 +892,27 @@ def get_ods_preview(part_id):
             project_id = part.project_id
             
             # 打印调试信息
-            print(f"查询尺寸数据: part_id={part_id}, part_number={part_number}, project_id={project_id}")
+            logger.debug("查询尺寸数据: part_id={part_id}, part_number={part_number}, project_id={project_id}")
             
             # 使用DimensionService查询尺寸数据
-            service = DimensionService(db.session)
+            service = DimensionService(session)
             
             # 尝试通过零件编号查询尺寸数据
             dimension_records = service.get_dimensions_by_part_number(project_id, part_number)
-            print(f"通过零件编号{part_number}查询到 {len(dimension_records)} 条记录")
+            logger.debug("通过零件编号{part_number}查询到 {len(dimension_records)} 条记录")
             
             # 如果没找到，尝试通过part_id查询
             if not dimension_records:
                 part_id_str = str(part_id)
                 dimension_records = service.get_dimensions_by_part(part_id_str)
-                print(f"通过part_id={part_id_str}查询到 {len(dimension_records)} 条记录")
+                logger.debug("通过part_id={part_id_str}查询到 {len(dimension_records)} 条记录")
             
             # 只获取与当前零件相关的图片尺寸数据
             # 查找part_id为空（未关联到特定零件）的图片尺寸
             from bom_system.dimensions.models import Dimension
             from sqlalchemy import or_, and_
             # 查找与当前零件相关的图片尺寸：要么part_id匹配，要么part_id为空（通用图片尺寸）
-            related_image_dimensions = db.session.query(Dimension).filter(
+            related_image_dimensions = session.query(Dimension).filter(
                 or_(
                     # 与当前零件直接关联的图片尺寸
                     and_(
@@ -971,7 +926,7 @@ def get_ods_preview(part_id):
                     )
                 )
             ).all()
-            print(f"找到 {len(related_image_dimensions)} 条与当前零件相关的图片尺寸记录")
+            logger.debug("找到 {len(related_image_dimensions)} 条与当前零件相关的图片尺寸记录")
             
             # 合并尺寸数据，避免重复
             all_dimensions = dimension_records.copy()
@@ -983,15 +938,12 @@ def get_ods_preview(part_id):
             # 如果仍然没有数据，尝试获取项目所有尺寸
             if not all_dimensions:
                 all_dimensions = service.get_dimensions_by_project(project_id)
-                print(f"通过项目ID{project_id}查询到 {len(all_dimensions)} 条记录")
+                logger.debug("通过项目ID{project_id}查询到 {len(all_dimensions)} 条记录")
             
             dimension_records = all_dimensions
-            
-            # 关闭数据库会话
-            db.session.close()
         else:
             # 如果找不到零件，返回空列表
-            print(f"未找到零件: part_id={part_id}")
+            logger.debug("未找到零件: part_id={part_id}")
             dimension_records = []
         
         # 转换数据格式
@@ -1044,7 +996,7 @@ def get_ods_preview(part_id):
             }
         )
     except Exception as e:
-        print(f"获取ODS预览数据失败: {str(e)}")
+        logger.debug("获取ODS预览数据失败: {str(e)}")
         return APIResponse.internal_server_error(
             message=f"Get ODS preview failed: {str(e)}",
             errors={"error": "get ods preview failed"}
@@ -1054,9 +1006,9 @@ def get_ods_preview(part_id):
 def generate_ods():
     """生成ODS检验指导书"""
     try:
-        print("开始生成ODS")
+        logger.debug("开始生成ODS")
         data = request.get_json()
-        print(f"获取到数据: {data}")
+        logger.debug("获取到数据: {data}")
         if not data:
             return APIResponse.bad_request(
                 message="request body required"
@@ -1064,7 +1016,7 @@ def generate_ods():
 
         part_id = data.get("part_id")
         header_data = data.get("header_data", {})
-        print(f"part_id: {part_id}, header_data: {header_data}")
+        logger.debug("part_id: {part_id}, header_data: {header_data}")
 
         if not part_id:
             return APIResponse.bad_request(
@@ -1080,16 +1032,17 @@ def generate_ods():
             )
 
         # 获取零件信息
-        part = BomTable.query.get(part_id)
-        print(f"获取到零件信息: {part}")
+        session = get_db_session()
+        part = session.query(BomTable).get(part_id)
+        logger.debug("获取到零件信息: {part}")
         if not part:
             return APIResponse.not_found(
                 message="part not found"
             )
 
         # 获取项目信息
-        project = Project.query.get(part.project_id)
-        print(f"获取到项目信息: {project}")
+        project = session.query(Project).get(part.project_id)
+        logger.debug("获取到项目信息: {project}")
         if not project:
             return APIResponse.not_found(
                 message="project not found"
@@ -1102,7 +1055,7 @@ def generate_ods():
             "customer_name": project.customer_name,
             "description": project.description,
         }
-        print(f"构建项目信息: {project_info}")
+        logger.debug("构建项目信息: {project_info}")
 
         # 构建零件信息
         part_info = {
@@ -1113,7 +1066,7 @@ def generate_ods():
             "original_material": part.original_material,
             "final_material_cn": part.final_material_cn,
         }
-        print(f"构建零件信息: {part_info}")
+        logger.debug("构建零件信息: {part_info}")
 
         # 从数据库获取尺寸数据
         from bom_system.dimensions.models import Dimension
@@ -1124,28 +1077,28 @@ def generate_ods():
         project_id = part.project_id
         
         # 打印调试信息
-        print(f"查询尺寸数据: part_id={part_id}, part_number={part_number}, project_id={project_id}")
+        logger.debug("查询尺寸数据: part_id={part_id}, part_number={part_number}, project_id={project_id}")
         
         # 使用DimensionService查询尺寸数据
         from bom_system.models import db
-        service = DimensionService(db.session)
+        service = DimensionService(session)
         
         # 尝试通过零件编号查询尺寸数据
         dimension_records = service.get_dimensions_by_part_number(project_id, part_number)
-        print(f"通过零件编号{part_number}查询到 {len(dimension_records)} 条记录")
+        logger.debug("通过零件编号{part_number}查询到 {len(dimension_records)} 条记录")
         
         # 如果没找到，尝试通过part_id查询
         if not dimension_records:
             part_id_str = str(part_id)
             dimension_records = service.get_dimensions_by_part(part_id_str)
-            print(f"通过part_id={part_id_str}查询到 {len(dimension_records)} 条记录")
+            logger.debug("通过part_id={part_id_str}查询到 {len(dimension_records)} 条记录")
         
         # 只获取与当前零件相关的图片尺寸数据
         # 查找part_id为空（未关联到特定零件）的图片尺寸
         from bom_system.dimensions.models import Dimension
         from sqlalchemy import or_, and_
         # 查找与当前零件相关的图片尺寸：要么part_id匹配，要么part_id为空（通用图片尺寸）
-        related_image_dimensions = db.session.query(Dimension).filter(
+        related_image_dimensions = session.query(Dimension).filter(
             or_(
                 # 与当前零件直接关联的图片尺寸
                 and_(
@@ -1159,7 +1112,7 @@ def generate_ods():
                 )
             )
         ).all()
-        print(f"找到 {len(related_image_dimensions)} 条与当前零件相关的图片尺寸记录")
+        logger.debug("找到 {len(related_image_dimensions)} 条与当前零件相关的图片尺寸记录")
         
         # 合并尺寸数据，避免重复
         all_dimensions = dimension_records.copy()
@@ -1171,19 +1124,16 @@ def generate_ods():
         # 如果仍然没有数据，尝试获取项目所有尺寸
         if not all_dimensions:
             all_dimensions = service.get_dimensions_by_project(project_id)
-            print(f"通过项目ID{project_id}查询到 {len(all_dimensions)} 条记录")
+            logger.debug("通过项目ID{project_id}查询到 {len(all_dimensions)} 条记录")
         
         dimension_records = all_dimensions
         
-        # 关闭数据库会话
-        db.session.close()
-        
         # 转换数据格式
         dimensions = []
-        print(f"dimension_records类型: {type(dimension_records)}")
-        print(f"dimension_records长度: {len(dimension_records)}")
+        logger.debug("dimension_records类型: {type(dimension_records)}")
+        logger.debug("dimension_records长度: {len(dimension_records)}")
         for i, dim in enumerate(dimension_records):
-            print(f"dimension_records[{i}]类型: {type(dim)}")
+            logger.debug("dimension_records[{i}]类型: {type(dim)}")
             # 处理特征描述
             drawing = ""
             
@@ -1204,7 +1154,7 @@ def generate_ods():
                 "frequency": "首/巡/末检",
                 "imageUrl": dim.image_url or "" if hasattr(dim, 'image_url') else ""
             }
-            print(f"添加到dimensions的元素: {dim_dict}")
+            logger.debug("添加到dimensions的元素: {dim_dict}")
             dimensions.append(dim_dict)
         
         # 如果没有尺寸数据，使用默认数据
@@ -1264,7 +1214,7 @@ def generate_ods():
         )
 
     except Exception as e:
-        print(f"ODS generation error: {str(e)}")
+        logger.debug("ODS generation error: {str(e)}")
         import traceback
         traceback.print_exc()
         # 打印完整的错误堆栈
@@ -1272,7 +1222,7 @@ def generate_ods():
         exc_type, exc_value, exc_traceback = sys.exc_info()
         error_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         error_message = ''.join(error_lines)
-        print(f"完整错误信息: {error_message}")
+        logger.debug("完整错误信息: {error_message}")
         return APIResponse.internal_server_error(
             message=f"Generate ODS failed: {str(e)}",
             errors={"error": "generate ODS failed"}
@@ -1282,78 +1232,79 @@ def generate_ods():
 @api_bp.route("/process-capability/generate", methods=["POST"])
 def generate_process_capability():
     """生成初始过程能力分析报告"""
-    print("=== 开始处理初始过程能力分析报告请求 ===")
+    logger.debug("=== 开始处理初始过程能力分析报告请求 ===")
     try:
         data = request.get_json()
-        print(f"收到的请求数据: {data}")
+        logger.debug("收到的请求数据: {data}")
         if not data:
-            print("错误: 缺少请求体")
+            logger.debug("错误: 缺少请求体")
             return APIResponse.bad_request(
                 message="request body required"
             )
 
         part_id = data.get("part_id")
         project_id = data.get("project_id")
-        print(f"part_id: {part_id}, project_id: {project_id}")
+        logger.debug("part_id: {part_id}, project_id: {project_id}")
 
         if not part_id and not project_id:
-            print("错误: 缺少part_id或project_id")
+            logger.debug("错误: 缺少part_id或project_id")
             return APIResponse.bad_request(
                 message="either part_id or project_id is required"
             )
 
-        # 模板文件路径
-        template_path = r"C:\Users\Administrator\univer\output\01-初始过程能力分析报告 Y1393847.xls"
-        print(f"模板文件路径: {template_path}")
-        print(f"模板文件存在: {os.path.exists(template_path)}")
+        # 模板文件路径 - 从配置读取
+        template_path = PROCESS_CAPABILITY_TEMPLATE_PATH
+        logger.debug("模板文件路径: {template_path}")
+        logger.debug("模板文件存在: {os.path.exists(template_path)}")
         if not os.path.exists(template_path):
-            print("错误: 模板文件不存在")
+            logger.debug("错误: 模板文件不存在")
             return APIResponse.internal_server_error(
                 message="template file not found"
             )
 
         # 导入ProcessCapabilityService
         from bom_system.process_capability import ProcessCapabilityService
-        print("导入ProcessCapabilityService成功")
+        logger.debug("导入ProcessCapabilityService成功")
         service = ProcessCapabilityService(template_path)
-        print("创建ProcessCapabilityService实例成功")
+        logger.debug("创建ProcessCapabilityService实例成功")
 
         # 生成输出目录
         output_dir = os.path.join(os.path.dirname(template_path), "process_capability")
-        print(f"创建输出目录: {output_dir}")
+        logger.debug("创建输出目录: {output_dir}")
         os.makedirs(output_dir, exist_ok=True)
-        print(f"输出目录创建成功: {os.path.exists(output_dir)}")
+        logger.debug("输出目录创建成功: {os.path.exists(output_dir)}")
 
         if part_id:
             # 为单个零件生成报告
             try:
                 part_id = int(part_id)
-                print(f"转换part_id为整数: {part_id}")
+                logger.debug("转换part_id为整数: {part_id}")
             except ValueError:
-                print("错误: part_id不是有效的整数")
+                logger.debug("错误: part_id不是有效的整数")
                 return APIResponse.bad_request(
                     message="part_id must be an integer"
                 )
 
             from .models import BomTable
-            part = BomTable.query.get(part_id)
+            session = get_db_session()
+            part = session.query(BomTable).get(part_id)
             if not part:
-                print(f"错误: 找不到零件，part_id: {part_id}")
+                logger.debug("错误: 找不到零件，part_id: {part_id}")
                 return APIResponse.not_found(
                     message="part not found"
                 )
 
-            print(f"找到零件: id={part.id}, part_number={part.part_number}, part_name={part.part_name}")
+            logger.debug("找到零件: id={part.id}, part_number={part.part_number}, part_name={part.part_name}")
 
             # 生成报告
-            print(f"开始生成报告，零件号: {str(part.part_number)}")
+            logger.debug("开始生成报告，零件号: {str(part.part_number)}")
             try:
                 output_paths = service.generate_report(part, output_dir)
-                print(f"报告生成成功: {len(output_paths)} 个文件")
+                logger.debug("报告生成成功: {len(output_paths)} 个文件")
                 for path in output_paths:
-                    print(f"生成的文件: {str(path)}")
+                    logger.debug("生成的文件: {str(path)}")
             except Exception as e:
-                print(f"生成报告时出错: {str(e)}")
+                logger.debug("生成报告时出错: {str(e)}")
                 import traceback
                 traceback.print_exc()
                 return APIResponse.internal_server_error(
@@ -1363,7 +1314,7 @@ def generate_process_capability():
             
             # 检查生成的文件是否存在
             if not output_paths:
-                print("错误: 没有生成任何文件")
+                logger.debug("错误: 没有生成任何文件")
                 return APIResponse.internal_server_error(
                     message="无法为该零件生成过程能力分析报告，可能是因为缺少尺寸数据",
                     errors={"error": "no files generated"}
@@ -1371,7 +1322,7 @@ def generate_process_capability():
             
             for output_path in output_paths:
                 if not os.path.exists(output_path):
-                    print(f"文件不存在: {str(output_path)}")
+                    logger.debug("文件不存在: {str(output_path)}")
                     return APIResponse.internal_server_error(
                         message=f"Generated file not found: {str(output_path)}",
                         errors={"error": "generated file not found"}
@@ -1379,13 +1330,13 @@ def generate_process_capability():
             
             # 读取文件内容
             output_path = output_paths[0]
-            print(f"读取文件: {output_path}")
+            logger.debug("读取文件: {output_path}")
             try:
                 with open(output_path, 'rb') as f:
                     file_content = f.read()
-                print(f"文件大小: {len(file_content)} bytes")
+                logger.debug("文件大小: {len(file_content)} bytes")
             except Exception as e:
-                print(f"读取文件时出错: {str(e)}")
+                logger.debug("读取文件时出错: {str(e)}")
                 return APIResponse.internal_server_error(
                     message=f"Read file failed: {str(e)}",
                     errors={"error": "read file failed"}
@@ -1399,13 +1350,13 @@ def generate_process_capability():
             import urllib.parse
             filename = os.path.basename(output_path)
             encoded_filename = urllib.parse.quote(filename)
-            print(f"文件名: {filename}, 编码后: {encoded_filename}")
+            logger.debug("文件名: {filename}, 编码后: {encoded_filename}")
             
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             response.headers['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8''{encoded_filename}'
             response.headers['Content-Length'] = str(len(file_content))
             
-            print("=== 请求处理完成 ===")
+            logger.debug("=== 请求处理完成 ===")
             # 发送文件
             return response
         elif project_id:
@@ -1413,7 +1364,7 @@ def generate_process_capability():
             try:
                 project_id = int(project_id)
             except ValueError:
-                print("错误: project_id不是有效的整数")
+                logger.debug("错误: project_id不是有效的整数")
                 return APIResponse.bad_request(
                     message="project_id must be an integer"
                 )
@@ -1421,11 +1372,11 @@ def generate_process_capability():
             # 生成报告
             try:
                 generated_files = service.generate_reports_for_project(project_id, output_dir)
-                print(f"为项目生成报告成功: {len(generated_files)} 个文件")
+                logger.debug("为项目生成报告成功: {len(generated_files)} 个文件")
                 for path in generated_files:
-                    print(f"生成的文件: {str(path)}")
+                    logger.debug("生成的文件: {str(path)}")
             except Exception as e:
-                print(f"生成报告时出错: {str(e)}")
+                logger.debug("生成报告时出错: {str(e)}")
                 import traceback
                 traceback.print_exc()
                 return APIResponse.internal_server_error(
@@ -1435,7 +1386,7 @@ def generate_process_capability():
 
             # 检查生成的文件是否存在
             if not generated_files:
-                print("错误: 项目中没有零件")
+                logger.debug("错误: 项目中没有零件")
                 return APIResponse.not_found(
                     message="no parts found for this project"
                 )
@@ -1451,7 +1402,7 @@ def generate_process_capability():
             )
 
     except Exception as e:
-        print(f"Process capability generation error: {str(e)}")
+        logger.debug("Process capability generation error: {str(e)}")
         import traceback
         traceback.print_exc()
         return APIResponse.internal_server_error(

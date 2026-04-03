@@ -310,11 +310,11 @@ def main():
     template_path = r'templates\WZ1D_Smart_Config_Template.xlsx'
     
     if not os.path.exists(template_path):
-        print('❌ 配置模板文件不存在')
+        logger.debug('❌ 配置模板文件不存在')
         return
     
-    print('🔧 Excel配置解析器测试')
-    print('=' * 40)
+    logger.debug('🔧 Excel配置解析器测试')
+    logger.debug('=' * 40)
     
     try:
         # 创建解析器
@@ -324,37 +324,37 @@ def main():
         config = parser.load_all_configurations()
         
         # 打印配置总结
-        print('\n📊 配置加载总结:')
-        print(f"字段映射: {len(config['data_layer']['field_mappings'])}个")
-        print(f"验证规则: {len(config['data_layer']['validation_rules'])}个") 
-        print(f"样式映射: {len(config['data_layer']['style_mappings'])}个")
-        print(f"模板区域: {len(config['template_layer']['template_regions'])}个")
-        print(f"生成规则: {len(config['control_layer']['generation_rules'])}个")
-        print(f"异常处理: {len(config['control_layer']['exception_handling'])}个")
+        logger.debug('\n📊 配置加载总结:')
+        logger.debug("字段映射: {len(config['data_layer']['field_mappings'])}个")
+        logger.debug("验证规则: {len(config['data_layer']['validation_rules'])}个") 
+        logger.debug("样式映射: {len(config['data_layer']['style_mappings'])}个")
+        logger.debug("模板区域: {len(config['template_layer']['template_regions'])}个")
+        logger.debug("生成规则: {len(config['control_layer']['generation_rules'])}个")
+        logger.debug("异常处理: {len(config['control_layer']['exception_handling'])}个")
         
         # 验证配置
         validation_result = parser.validate_configuration()
-        print(f'\n✅ 配置验证: {"通过" if validation_result["is_valid"] else "失败"}')
+        logger.debug('\n✅ 配置验证: {"通过" if validation_result["is_valid"] else "失败"}')
         
         if validation_result['errors']:
-            print('❌ 错误:')
+            logger.debug('❌ 错误:')
             for error in validation_result['errors']:
-                print(f'  - {error}')
+                logger.debug('  - {error}')
         
         if validation_result['warnings']:
-            print('⚠️ 警告:')
+            logger.debug('⚠️ 警告:')
             for warning in validation_result['warnings']:
-                print(f'  - {warning}')
+                logger.debug('  - {warning}')
         
         # 导出配置
         output_path = 'exported_config.json'
         if parser.export_config_to_json(output_path):
-            print(f'\n📄 配置已导出到: {output_path}')
+            logger.debug('\n📄 配置已导出到: {output_path}')
         
-        print('\n🎉 配置解析器测试完成！')
+        logger.debug('\n🎉 配置解析器测试完成！')
         
     except Exception as e:
-        print(f'❌ 测试失败: {e}')
+        logger.debug('❌ 测试失败: {e}')
 
 if __name__ == '__main__':
     import os

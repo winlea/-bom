@@ -1,12 +1,16 @@
 import base64
+import logging
 from io import BytesIO
 from typing import Optional, Tuple
 
 import requests
 from PIL import Image
+from sqlalchemy.orm import Session
 
 from .config import ALLOWED_IMAGE_MIME, HTTP_FETCH_TIMEOUT, MAX_IMAGE_BYTES
-from .models import BomTable, db
+from .models import BomTable
+
+logger = logging.getLogger(__name__)
 
 _FORMAT_TO_MIME = {
     "PNG": "image/png",
@@ -16,6 +20,12 @@ _FORMAT_TO_MIME = {
     "BMP": "image/bmp",
     "WEBP": "image/webp",
 }
+
+
+def _get_db_session() -> Session:
+    """获取请求级数据库会话（统一会话管理）"""
+    from bom_system.database.session import get_db_session
+    return get_db_session()
 
 
 def _validate_image_bytes(buf: bytes) -> Tuple[bool, Optional[str]]:
@@ -29,7 +39,6 @@ def _validate_image_bytes(buf: bytes) -> Tuple[bool, Optional[str]]:
     try:
         with Image.open(BytesIO(buf)) as img:
             fmt = (img.format or "").upper()
-            # Force decode to ensure content is actually an image
             img.load()
     except Exception:
         return False, None
@@ -47,6 +56,8 @@ def save_base64_image(
     """Save base64 data URI or raw base64 string for an image.
     Returns created record ID.
     """
+    session = _get_db_session()
+
     if "," in base64_str and base64_str.strip().lower().startswith("data:"):
         _, encoded = base64_str.split(",", 1)
     else:
@@ -63,13 +74,15 @@ def save_base64_image(
     record = BomTable(
         part_number=part_number, part_name=part_name, image_data=image_data
     )
-    db.session.add(record)
-    db.session.commit()
+    session.add(record)
+    session.commit()
     return record.id
 
 
 def save_url_image(part_number: str, url: str, part_name: Optional[str] = None) -> int:
     """Fetch image from URL and store bytes + URL reference. Returns record ID."""
+    session = _get_db_session()
+
     try:
         resp = requests.get(url, timeout=HTTP_FETCH_TIMEOUT)
     except requests.RequestException as e:
@@ -85,7 +98,6 @@ def save_url_image(part_number: str, url: str, part_name: Optional[str] = None) 
     if not ok:
         raise ValueError("Invalid or unsupported image content/size from URL")
 
-    # Prefer detected mime; optionally enforce against header if header provided and allowed set present
     if content_type and ALLOWED_IMAGE_MIME and content_type not in ALLOWED_IMAGE_MIME:
         if detected_mime not in ALLOWED_IMAGE_MIME:
             raise ValueError("Disallowed image mime from URL")
@@ -93,14 +105,15 @@ def save_url_image(part_number: str, url: str, part_name: Optional[str] = None) 
     record = BomTable(
         part_number=part_number, part_name=part_name, image_url=url, image_data=data
     )
-    db.session.add(record)
-    db.session.commit()
+    session.add(record)
+    session.commit()
     return record.id
 
 
 def get_image_bytes(record_id: int) -> Tuple[bytes, str]:
     """Load image by ID and return bytes and detected mimetype."""
-    rec = db.session.get(BomTable, record_id)
+    session = _get_db_session()
+    rec = session.get(BomTable, record_id)
     if not rec or not rec.image_data:
         raise LookupError("Image not found")
     data = rec.image_data
@@ -114,7 +127,8 @@ def get_effective_image_bytes(record_id: int) -> Tuple[bytes, str]:
     """Return this record's image bytes if present; otherwise try ancestor levels based on sequence.
     Falls back to LookupError if none found.
     """
-    rec = db.session.get(BomTable, record_id)
+    session = _get_db_session()
+    rec = session.get(BomTable, record_id)
     if not rec:
         raise LookupError("not found")
     # Use self image
@@ -130,7 +144,7 @@ def get_effective_image_bytes(record_id: int) -> Tuple[bytes, str]:
         for cut in range(len(parts) - 1, 0, -1):
             prefix = ".".join(parts[:cut])
             cand = (
-                db.session.query(BomTable)
+                session.query(BomTable)
                 .filter(BomTable.sequence == prefix, BomTable.image_data.isnot(None))
                 .order_by(BomTable.bom_sort.asc())
                 .first()

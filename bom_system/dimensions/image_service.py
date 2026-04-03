@@ -7,6 +7,7 @@ import io
 import os
 import uuid
 from datetime import datetime
+from bom_system.models import _utcnow
 from typing import Optional, Tuple
 
 from PIL import Image
@@ -37,36 +38,36 @@ class DimensionImageService:
             bool: 保存是否成功
         """
         try:
-            print(f"开始保存Canvas图片 - 尺寸ID: {dimension_id}")
+            logger.debug("开始保存Canvas图片 - 尺寸ID: {dimension_id}")
 
             # 获取尺寸记录
             dimension = self.session.query(Dimension).filter_by(id=dimension_id).first()
             if not dimension:
                 raise ValueError(f"尺寸记录不存在: {dimension_id}")
 
-            print(f"找到尺寸记录: {dimension.characteristic}")
+            logger.debug("找到尺寸记录: {dimension.characteristic}")
 
             # 解析data URL
             if not canvas_data_url.startswith("data:image/"):
                 raise ValueError(f"无效的图片数据格式: {canvas_data_url[:50]}...")
 
-            print(f"Canvas数据URL格式正确，长度: {len(canvas_data_url)}")
+            logger.debug("Canvas数据URL格式正确，长度: {len(canvas_data_url)}")
 
             # 提取base64数据
             try:
                 header, data = canvas_data_url.split(",", 1)
                 image_data = base64.b64decode(data)
-                print(f"Base64解码成功，图片数据大小: {len(image_data)} bytes")
+                logger.debug("Base64解码成功，图片数据大小: {len(image_data)} bytes")
             except Exception as e:
                 raise ValueError(f"Base64解码失败: {str(e)}")
 
             # 生成文件路径
             upload_dir = os.path.join("static", "uploads", "dimensions", "canvas")
-            print(f"创建上传目录: {upload_dir}")
+            logger.debug("创建上传目录: {upload_dir}")
 
             try:
                 os.makedirs(upload_dir, exist_ok=True)
-                print(f"上传目录创建成功")
+                logger.debug("上传目录创建成功")
             except Exception as e:
                 raise Exception(f"创建上传目录失败: {str(e)}")
 
@@ -74,31 +75,31 @@ class DimensionImageService:
                 f"dimension_{dimension_id}_{image_type}_{uuid.uuid4().hex[:8]}.png"
             )
             file_path = os.path.join(upload_dir, filename)
-            print(f"文件路径: {file_path}")
+            logger.debug("文件路径: {file_path}")
 
             # 保存图片文件
             try:
                 with open(file_path, "wb") as f:
                     f.write(image_data)
-                print(f"图片文件保存成功: {file_path}")
+                logger.debug("图片文件保存成功: {file_path}")
             except Exception as e:
                 raise Exception(f"保存图片文件失败: {str(e)}")
 
             # 更新数据库记录
             image_url = f"/static/uploads/dimensions/canvas/{filename}"
             dimension.image_url = image_url
-            dimension.updated_at = datetime.utcnow()
+            dimension.updated_at = _utcnow()
 
             try:
                 self.session.commit()
-                print(f"数据库更新成功，图片URL: {image_url}")
+                logger.debug("数据库更新成功，图片URL: {image_url}")
             except Exception as e:
                 raise Exception(f"数据库更新失败: {str(e)}")
 
             return True
 
         except Exception as e:
-            print(f"保存Canvas图片失败: {str(e)}")
+            logger.debug("保存Canvas图片失败: {str(e)}")
             self.session.rollback()
             raise Exception(f"保存Canvas图片失败: {str(e)}")
 
@@ -215,7 +216,7 @@ class DimensionImageService:
                     combined_image.paste(dimension_img, (x, y))
 
                 except Exception as e:
-                    print(f"处理单个尺寸图片失败: {str(e)}")
+                    logger.debug("处理单个尺寸图片失败: {str(e)}")
                     continue
 
             return combined_image
@@ -302,7 +303,7 @@ class DimensionImageService:
 
             # 清空数据库记录
             dimension.image_url = None
-            dimension.updated_at = datetime.utcnow()
+            dimension.updated_at = _utcnow()
 
             self.session.commit()
             return True

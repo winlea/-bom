@@ -142,7 +142,7 @@ class MultiDimensionValidator:
 
     def run_multi_dimension_test(self):
         """运行多尺寸测试"""
-        print("开始多尺寸验证测试...")
+        logger.debug("开始多尺寸验证测试...")
 
         test_cases = [
             {"part_number": "4266007", "dimensions_count": 3},
@@ -152,8 +152,7 @@ class MultiDimensionValidator:
         ]
 
         for case in test_cases:
-            print(
-                f"测试零件 {case['part_number']} 的 {case['dimensions_count']} 个尺寸..."
+            logger.debug("测试零件 {case['part_number']} 的 {case['dimensions_count']} 个尺寸..."
             )
 
             # 创建测试零件
@@ -185,8 +184,7 @@ class MultiDimensionValidator:
             self.test_results.append(result)
 
             status = "✓ 通过" if validation_result["success"] else "✗ 失败"
-            print(
-                f"{status} 零件 {case['part_number']} - 找到 {validation_result['actual_count']} 个尺寸"
+            logger.debug("{status} 零件 {case['part_number']} - 找到 {validation_result['actual_count']} 个尺寸"
             )
 
         # 生成测试报告
@@ -211,25 +209,24 @@ class MultiDimensionValidator:
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
 
-        print(f"\n测试报告已保存: {report_path}")
+        logger.debug("\n测试报告已保存: {report_path}")
 
         # 打印总结
-        print(f"\n=== 测试总结 ===")
-        print(f"总测试数: {report['total_tests']}")
-        print(f"通过测试: {report['passed_tests']}")
-        print(f"失败测试: {report['failed_tests']}")
+        logger.debug("\n=== 测试总结 ===")
+        logger.debug("总测试数: {report['total_tests']}")
+        logger.debug("通过测试: {report['passed_tests']}")
+        logger.debug("失败测试: {report['failed_tests']}")
 
         if report["failed_tests"] > 0:
-            print("\n失败详情:")
+            logger.debug("\n失败详情:")
             for result in self.test_results:
                 if not result["validation"]["success"]:
-                    print(
-                        f"- 零件 {result['part_number']}: {result['validation']['placement_check']}"
+                    logger.debug("- 零件 {result['part_number']}: {result['validation']['placement_check']}"
                     )
 
     def run_quick_test(self):
         """运行快速测试"""
-        print("运行快速多尺寸测试...")
+        logger.debug("运行快速多尺寸测试...")
 
         # 创建一个测试零件，包含4个尺寸
         test_part = self.create_test_part_with_multiple_dimensions("TEST_001", 4)
@@ -243,8 +240,8 @@ class MultiDimensionValidator:
         # 验证
         result = self.validate_dimension_placement(template_path, 4)
 
-        print(f"快速测试结果: {'通过' if result['success'] else '失败'}")
-        print(f"找到尺寸数量: {result['actual_count']}")
+        logger.debug("快速测试结果: {'通过' if result['success'] else '失败'}")
+        logger.debug("找到尺寸数量: {result['actual_count']}")
 
         return result
 

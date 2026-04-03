@@ -2,6 +2,7 @@
 尺寸管理服务层
 """
 
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session
 from werkzeug.utils import secure_filename
 
 from bom_system.dimensions.models import Dimension, DimensionVersion, DimensionTemplate
+
+logger = logging.getLogger(__name__)
 
 
 class DimensionValidationError(Exception):
@@ -1057,11 +1060,8 @@ class DimensionService:
 
         except Exception as e:
             self.session.rollback()
-            print(f"删除尺寸失败: {e}")
-            import traceback
-
-            traceback.print_exc()
-            return False
+            logger.error("删除尺寸失败: %s", e)
+            raise
 
     def save_dimension_image(self, file) -> str:
         """保存尺寸图片并返回URL"""

@@ -11,12 +11,15 @@ from .. import importer
 from ..models import BomTable, ImportLog, Project, db
 from ..api.response import APIResponse
 from . import bp
+from bom_system.database.session import get_db_session
+
 
 # CRUD for projects
 
 
 @bp.get("/projects")
 def list_projects():
+    session = get_db_session()
     items = Project.query.order_by(Project.created_at.desc()).all()
     return APIResponse.success(
         data={
@@ -45,42 +48,43 @@ def list_projects():
 
 @bp.post("/projects")
 def create_project():
+    session = get_db_session()
     try:
-        print("收到创建项目请求...")
+        logger.debug("收到创建项目请求...")
 
         # 检查是否是FormData格式
         if request.files:
-            print("收到FormData请求")
+            logger.debug("收到FormData请求")
             data = request.form
             # 获取签名图片
             signature_file = request.files.get("quality_engineer_signature")
             quality_engineer_signature = signature_file.read() if signature_file else None
         else:
-            print("收到JSON请求")
+            logger.debug("收到JSON请求")
             data = request.get_json(force=True)
             quality_engineer_signature = data.get("quality_engineer_signature")
 
-        print(f"请求数据: {data}")
+        logger.debug("请求数据: {data}")
 
         if not data:
-            print("请求体为空")
+            logger.debug("请求体为空")
             return APIResponse.bad_request(
                 message="请求体不能为空",
                 errors={"error": "request body required"}
             )
 
         name = (data.get("name") or "").strip()
-        print(f"项目名称: {name}")
+        logger.debug("项目名称: {name}")
 
         if not name:
-            print("项目名称为空")
+            logger.debug("项目名称为空")
             return APIResponse.bad_request(
                 message="项目名称不能为空",
                 errors={"error": "name required"}
             )
 
         desc = (data.get("description") or "").strip() or None
-        print(f"项目描述: {desc}")
+        logger.debug("项目描述: {desc}")
 
         # 新增项目信息字段
         supplier_name = data.get("supplier_name")
@@ -92,24 +96,24 @@ def create_project():
         phone = data.get("phone")
         email = data.get("email")
 
-        print(f"供方名称: {supplier_name}")
-        print(f"街道地址: {address}")
-        print(f"供方代码: {supplier_code}")
-        print(f"客户名称: {customer_name}")
-        print(f"客户采购: {customer_purchase}")
-        print(f"质量工程师: {quality_engineer}")
-        print(f"电话: {phone}")
-        print(f"邮箱: {email}")
-        print(f"是否有签名图片: {quality_engineer_signature is not None}")
+        logger.debug("供方名称: {supplier_name}")
+        logger.debug("街道地址: {address}")
+        logger.debug("供方代码: {supplier_code}")
+        logger.debug("客户名称: {customer_name}")
+        logger.debug("客户采购: {customer_purchase}")
+        logger.debug("质量工程师: {quality_engineer}")
+        logger.debug("电话: {phone}")
+        logger.debug("邮箱: {email}")
+        logger.debug("是否有签名图片: {quality_engineer_signature is not None}")
 
         # 检查数据库连接
-        print("检查数据库连接...")
+        logger.debug("检查数据库连接...")
         try:
             # 测试数据库会话
-            test_query = db.session.query(Project).limit(1)
-            print(f"数据库会话测试: {test_query}")
+            test_query = session.query(Project).limit(1)
+            logger.debug("数据库会话测试: {test_query}")
         except Exception as db_test_error:
-            print(f"数据库会话测试失败: {db_test_error}")
+            logger.debug("数据库会话测试失败: {db_test_error}")
 
         p = Project(
             name=name, 
@@ -124,14 +128,14 @@ def create_project():
             phone=phone,
             email=email
         )
-        print(f"创建项目对象: {p}")
+        logger.debug("创建项目对象: {p}")
 
-        db.session.add(p)
-        print("添加项目到会话")
+        session.add(p)
+        logger.debug("添加项目到会话")
 
-        print("提交数据库事务...")
-        db.session.commit()
-        print(f"项目创建成功，ID: {p.id}")
+        logger.debug("提交数据库事务...")
+        session.commit()
+        logger.debug("项目创建成功，ID: {p.id}")
 
         return jsonify({
             "id": p.id, 
@@ -141,11 +145,11 @@ def create_project():
             "created_at": p.created_at.isoformat() if p.created_at else None
         })
     except Exception as e:
-        print(f"创建项目失败: {e}")
+        logger.debug("创建项目失败: {e}")
         import traceback
 
         traceback.print_exc()
-        db.session.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"创建项目时发生错误: {str(e)}",
             errors={"error": "create project failed"}
@@ -154,20 +158,21 @@ def create_project():
 
 @bp.delete("/projects/<int:pid>")
 def delete_project(pid: int):
+    session = get_db_session()
     try:
-        p = db.session.get(Project, pid)
+        p = session.get(Project, pid)
         if not p:
             return APIResponse.not_found(
                 message=f"项目ID {pid} 不存在"
             )
-        db.session.delete(p)
-        db.session.commit()
+        session.delete(p)
+        session.commit()
         return APIResponse.success(
             message="项目删除成功",
             data={"status": "success"}
         )
     except Exception as e:
-        db.session.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"删除项目时发生错误: {str(e)}",
             errors={"error": "delete failed"}
@@ -176,10 +181,11 @@ def delete_project(pid: int):
 
 @bp.put("/projects/<int:pid>")
 def update_project(pid: int):
+    session = get_db_session()
     try:
-        print(f"收到更新项目请求，ID: {pid}")
+        logger.debug("收到更新项目请求，ID: {pid}")
 
-        p = db.session.get(Project, pid)
+        p = session.get(Project, pid)
         if not p:
             return APIResponse.not_found(
                 message=f"项目ID {pid} 不存在"
@@ -187,30 +193,30 @@ def update_project(pid: int):
 
         # 检查是否是FormData格式
         if request.files:
-            print("收到FormData请求")
+            logger.debug("收到FormData请求")
             data = request.form
             # 获取签名图片
             signature_file = request.files.get("quality_engineer_signature")
             quality_engineer_signature = signature_file.read() if signature_file else None
         else:
-            print("收到JSON请求")
+            logger.debug("收到JSON请求")
             data = request.get_json(force=True)
             quality_engineer_signature = data.get("quality_engineer_signature")
 
-        print(f"请求数据: {data}")
+        logger.debug("请求数据: {data}")
 
         if not data:
-            print("请求体为空")
+            logger.debug("请求体为空")
             return APIResponse.bad_request(
                 message="请求体不能为空",
                 errors={"error": "request body required"}
             )
 
         name = (data.get("name") or "").strip()
-        print(f"项目名称: {name}")
+        logger.debug("项目名称: {name}")
 
         if not name:
-            print("项目名称为空")
+            logger.debug("项目名称为空")
             return APIResponse.bad_request(
                 message="项目名称不能为空",
                 errors={"error": "name required"}
@@ -233,11 +239,11 @@ def update_project(pid: int):
         if quality_engineer_signature is not None:
             p.quality_engineer_signature = quality_engineer_signature
 
-        print("更新项目对象")
-        db.session.add(p)
-        print("提交数据库事务...")
-        db.session.commit()
-        print(f"项目更新成功，ID: {p.id}")
+        logger.debug("更新项目对象")
+        session.add(p)
+        logger.debug("提交数据库事务...")
+        session.commit()
+        logger.debug("项目更新成功，ID: {p.id}")
 
         return jsonify({
             "id": p.id, 
@@ -255,11 +261,11 @@ def update_project(pid: int):
             "email": p.email
         })
     except Exception as e:
-        print(f"更新项目失败: {e}")
+        logger.debug("更新项目失败: {e}")
         import traceback
 
         traceback.print_exc()
-        db.session.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"更新项目时发生错误: {str(e)}",
             errors={"error": "update project failed"}
@@ -269,10 +275,11 @@ def update_project(pid: int):
 @bp.get("/projects/<int:pid>")
 def get_project(pid: int):
     """
+    session = get_db_session()
     返回单个项目详情，供前端按项目 id 请求使用。
     """
     try:
-        p = db.session.get(Project, pid)
+        p = session.get(Project, pid)
         if not p:
             return APIResponse.not_found(
                 message=f"项目ID {pid} 不存在"
@@ -307,16 +314,17 @@ def get_project(pid: int):
 # Dashboard summary & recent
 @bp.get("/dashboard/summary")
 def dashboard_summary():
-    project_count = db.session.query(func.count(Project.id)).scalar() or 0
-    parts_count = db.session.query(func.count(BomTable.id)).scalar() or 0
+    session = get_db_session()
+    project_count = session.query(func.count(Project.id)).scalar() or 0
+    parts_count = session.query(func.count(BomTable.id)).scalar() or 0
     with_image = (
-        db.session.query(func.count(BomTable.id))
+        session.query(func.count(BomTable.id))
         .filter(BomTable.image_data.isnot(None))
         .scalar()
         or 0
     )
     without_image = max(0, parts_count - with_image)
-    last_import = db.session.query(func.max(ImportLog.created_at)).scalar()
+    last_import = session.query(func.max(ImportLog.created_at)).scalar()
     return APIResponse.success(
         data={
             "project_count": project_count,
@@ -330,6 +338,7 @@ def dashboard_summary():
 
 @bp.get("/dashboard/recent")
 def dashboard_recent():
+    session = get_db_session()
     recent_projects = Project.query.order_by(Project.created_at.desc()).limit(5).all()
     recent_imports = (
         ImportLog.query.order_by(ImportLog.created_at.desc()).limit(5).all()
@@ -373,6 +382,7 @@ def dashboard_recent():
 @bp.post("/projects/<int:pid>/import")
 def import_project_bom(pid: int):
     """
+    session = get_db_session()
     接收项目级别的 BOM 导入文件（multipart/form-data）
     - file: 上传的 CSV 或 XLSX 文件（可选）
     - mapping: 可选的字段映射 JSON 字符串（前端可传）
@@ -381,7 +391,7 @@ def import_project_bom(pid: int):
     - 创建一条 ImportLog 记录（created_count/errors_count 初始为 0）
     - 返回 202 Accepted 并返回 import_log id（实际导入可由后台任务或手动触发）
     """
-    p = db.session.get(Project, pid)
+    p = session.get(Project, pid)
     if not p:
         return APIResponse.not_found(
             message="项目不存在"
@@ -417,10 +427,10 @@ def import_project_bom(pid: int):
         il = ImportLog(
             project_id=pid, filename=filename, created_count=0, errors_count=0
         )
-        db.session.add(il)
-        db.session.commit()
+        session.add(il)
+        session.commit()
     except Exception as e:
-        db.session.rollback()
+        session.rollback()
         return APIResponse.internal_server_error(
             message=f"创建导入日志失败: {str(e)}",
             errors={"error": "failed to create import log"}
@@ -442,7 +452,8 @@ def import_project_bom(pid: int):
 # 新增：查询指定 import log 的详情
 @bp.get("/imports/<int:import_id>")
 def get_import_log(import_id: int):
-    il = db.session.get(ImportLog, import_id)
+    session = get_db_session()
+    il = session.get(ImportLog, import_id)
     if not il:
         return APIResponse.not_found(
             message="导入日志不存在"
@@ -462,6 +473,7 @@ def get_import_log(import_id: int):
 
 def _find_uploaded_file_for_import(import_log: ImportLog) -> Optional[str]:
     """
+    session = get_db_session()
     在 uploads/imports 中查找与 import_log.filename 关联的文件（按时间降序）
     返回文件绝对路径或 None
     """
@@ -488,14 +500,16 @@ def _find_uploaded_file_for_import(import_log: ImportLog) -> Optional[str]:
 # 新增：触发对指定 import_log 的同步处理（仅用于开发或手动联调）
 @bp.post("/imports/<int:import_id>/process")
 def process_import_log(import_id: int):
-    il = db.session.get(ImportLog, import_id)
+    session = get_db_session()
+    il = session.get(ImportLog, import_id)
     if not il:
         return APIResponse.not_found(
             message="导入日志不存在"
         )
 
-    print(
-        f"DEBUG: ImportLog record: id={il.id}, project_id={il.project_id}, filename={il.filename}"
+    logger.debug(
+        "DEBUG: ImportLog record: id=%s, project_id=%s, filename=%s",
+        il.id, il.project_id, il.filename
     )
 
     # 找到上传文件
@@ -512,18 +526,19 @@ def process_import_log(import_id: int):
             data = fh.read()
         lower = file_path.lower()
         if lower.endswith(".csv"):
-            print(f"DEBUG: Calling import_csv with project_id={il.project_id}")
+            logger.debug("DEBUG: Calling import_csv with project_id={il.project_id}")
             result = importer.import_csv(data, project_id=il.project_id)
         else:
             # 其他按 xlsx 处理（openpyxl 支持 xlsx）
             try:
-                print(f"DEBUG: Calling import_xlsx with project_id={il.project_id}")
+                logger.debug("DEBUG: Calling import_xlsx with project_id={il.project_id}")
                 result = importer.import_xlsx(data, project_id=il.project_id)
             except Exception as e:
                 # 如果 xlsx 解析失败，尝试 csv 解析（兼容性）
                 try:
-                    print(
-                        f"DEBUG: Calling import_csv (fallback) with project_id={il.project_id}"
+                    logger.debug(
+                        "DEBUG: Calling import_csv (fallback) with project_id=%s",
+                        il.project_id
                     )
                     result = importer.import_csv(data, project_id=il.project_id)
                 except Exception as e2:
@@ -543,10 +558,10 @@ def process_import_log(import_id: int):
         try:
             il.created_count = created
             il.errors_count = errors_count
-            db.session.add(il)
-            db.session.commit()
+            session.add(il)
+            session.commit()
         except Exception as e:
-            db.session.rollback()
+            session.rollback()
             return APIResponse.internal_server_error(
                 message=f"更新导入日志失败: {str(e)}",
                 errors={"error": "failed to update import log", "process_result": result}

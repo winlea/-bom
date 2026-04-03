@@ -4,11 +4,9 @@
 
 import logging
 
-from flask import Blueprint, jsonify, request, session
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from flask import Blueprint, jsonify, request
 
-from bom_system.config import SQLALCHEMY_DATABASE_URI
+from bom_system.database.session import get_db_session
 from bom_system.dimensions.quality_service import QualityControlService
 from bom_system.dimensions.services import DimensionService, DimensionValidationError
 
@@ -45,25 +43,13 @@ def list_dimensions():
             else:
                 dims = service.get_dimensions_by_project(project_id)
         else:
-            db_session.close()
-            return (
-                jsonify({"success": False, "message": "请提供 partId 或 projectId"}),
-                400,
-            )
+            return jsonify({"success": False, "message": "请提供 partId 或 projectId"}), 400
 
         result = [d.to_dict() for d in dims]
-        db_session.close()
         return jsonify({"success": True, "data": result, "total": len(result)})
     except Exception as e:
         logger.error(f"查询尺寸失败: {str(e)}")
         return jsonify({"success": False, "message": f"查询尺寸失败: {str(e)}"}), 500
-
-
-def get_db_session():
-    """获取数据库会话"""
-    from bom_system.models import db
-
-    return db.session
 
 
 @dimensions_bp.route("/projects/<project_id>", methods=["GET"])
@@ -123,9 +109,6 @@ def get_project_dimensions(project_id):
                     "imageUrl": dim_dict.get("image_url", dim_dict.get("imageUrl")),
                 }
             )
-
-        db_session.close()
-
         return jsonify({"success": True, "data": result, "total": len(result)})
 
     except Exception as e:
@@ -144,9 +127,6 @@ def get_project_dimensions_grouped(project_id):
         service = DimensionService(db_session)
 
         groups = service.get_dimensions_grouped(project_id)
-
-        db_session.close()
-
         return jsonify({"success": True, "data": groups})
 
     except Exception as e:
@@ -174,9 +154,6 @@ def create_dimension(project_id):
             data["groupNo"] = service.get_next_group_number(project_id)
 
         dimension = service.create_dimension(project_id, data)
-
-        db_session.close()
-
         # 确保返回的数据格式与前端期望一致
         dim_dict = dimension.to_dict()
         response_data = {
@@ -226,12 +203,9 @@ def get_dimension(dimension_id):
         dimension = service.get_dimension_by_id(dimension_id)
 
         if not dimension:
-            db_session.close()
             return jsonify({"success": False, "message": "尺寸不存在"}), 404
 
         result = dimension.to_dict()
-        db_session.close()
-
         return jsonify({"success": True, "data": result})
 
     except Exception as e:
@@ -254,12 +228,9 @@ def update_dimension(dimension_id):
         dimension = service.update_dimension(dimension_id, data)
 
         if not dimension:
-            db_session.close()
             return jsonify({"success": False, "message": "尺寸不存在"}), 404
 
         result = dimension.to_dict()
-        db_session.close()
-
         return jsonify({"success": True, "data": result, "message": "尺寸更新成功"})
 
     except DimensionValidationError as e:
@@ -278,9 +249,6 @@ def delete_dimension(dimension_id):
         service = DimensionService(db_session)
 
         success = service.delete_dimension(dimension_id)
-
-        db_session.close()
-
         if not success:
             return jsonify({"success": False, "message": "尺寸不存在"}), 404
 
@@ -311,7 +279,6 @@ def bulk_create_dimensions(project_id):
             try:
                 service.validate_dimension_data(dim_data)
             except DimensionValidationError as e:
-                db_session.close()
                 return jsonify({
                     "success": False, 
                     "message": f"第 {idx + 1} 个尺寸验证失败: {str(e)}"
@@ -321,8 +288,6 @@ def bulk_create_dimensions(project_id):
         try:
             dimensions = service.bulk_create_dimensions(project_id, data)
         except Exception as e:
-            db_session.rollback()
-            db_session.close()
             logger.error(f"批量创建尺寸失败: {str(e)}")
             return (
                 jsonify({"success": False, "message": f"批量创建尺寸失败: {str(e)}"}),
@@ -330,8 +295,6 @@ def bulk_create_dimensions(project_id):
             )
 
         result = [dim.to_dict() for dim in dimensions]
-        db_session.close()
-
         return (
             jsonify(
                 {
@@ -473,8 +436,6 @@ def import_dimensions(project_id):
         dimensions = service.bulk_create_dimensions(project_id, dimensions_data)
 
         result = [dim.to_dict() for dim in dimensions]
-        db_session.close()
-
         return (
             jsonify(
                 {
@@ -505,9 +466,6 @@ def get_next_group_number(project_id):
         service = DimensionService(db_session)
 
         next_group = service.get_next_group_number(project_id)
-
-        db_session.close()
-
         return jsonify({"success": True, "data": {"nextGroupNumber": next_group}})
 
     except Exception as e:
@@ -555,9 +513,6 @@ def insert_dimension_at_position(project_id):
         dimension = service.insert_dimension_at_position(
             project_id, insert_position, data
         )
-
-        db_session.close()
-
         # 返回格式化的数据
         dim_dict = dimension.to_dict()
         response_data = {
@@ -602,9 +557,6 @@ def delete_dimension_with_reorder(dimension_id):
         service = DimensionService(db_session)
 
         success = service.delete_dimension_with_reorder(dimension_id)
-
-        db_session.close()
-
         if not success:
             return (
                 jsonify(
@@ -683,9 +635,6 @@ def upload_dimension_image():
         service = DimensionService(db_session)
 
         image_url = service.save_dimension_image(file)
-
-        db_session.close()
-
         return jsonify(
             {
                 "success": True,
@@ -762,9 +711,6 @@ def create_image_dimension(project_id):
         dimension = service.insert_dimension_at_position(
             project_id, int(insert_position), dimension_data
         )
-
-        db_session.close()
-
         # 返回格式化的数据
         dim_dict = dimension.to_dict()
         response_data = {
@@ -833,9 +779,6 @@ def create_image_only_dimension(project_id):
             if "groupNo" not in dimension_data or not dimension_data["groupNo"]:
                 dimension_data["groupNo"] = service.get_next_group_number(project_id)
             dimension = service.create_dimension(project_id, dimension_data)
-
-        db_session.close()
-
         # 返回格式化的数据
         dim_dict = dimension.to_dict()
         response_data = {
@@ -915,9 +858,6 @@ def validate_dimension():
         quality_service = QualityControlService(db_session)
 
         result = quality_service.validate_dimension(dimension_id, actual_value)
-
-        db_session.close()
-
         if not result.get("success"):
             return jsonify({"success": False, "message": result.get("message")}), 400
 
@@ -955,9 +895,6 @@ def save_inspection_result():
         inspection = quality_service.save_inspection_result(
             dimension_id, actual_value, inspector, notes
         )
-
-        db_session.close()
-
         return jsonify(
             {
                 "success": True,
@@ -982,9 +919,6 @@ def get_project_pass_rate(project_id):
         quality_service = QualityControlService(db_session)
 
         pass_rate_info = quality_service.get_project_pass_rate(project_id)
-
-        db_session.close()
-
         return jsonify({"success": True, "data": pass_rate_info})
 
     except Exception as e:
@@ -1005,9 +939,6 @@ def get_part_pass_rate(project_id, part_id):
         quality_service = QualityControlService(db_session)
 
         pass_rate_info = quality_service.get_part_pass_rate(project_id, part_id)
-
-        db_session.close()
-
         return jsonify({"success": True, "data": pass_rate_info})
 
     except Exception as e:
@@ -1045,9 +976,6 @@ def generate_quality_report():
         report = quality_service.generate_quality_report(
             project_id, report_name, generated_by, notes
         )
-
-        db_session.close()
-
         return jsonify(
             {"success": True, "message": "质量报告生成成功", "data": report.to_dict()}
         )
@@ -1070,9 +998,6 @@ def get_inspection_history(dimension_id):
         quality_service = QualityControlService(db_session)
 
         inspections = quality_service.get_inspection_history(dimension_id, limit)
-
-        db_session.close()
-
         result = [insp.to_dict() for insp in inspections]
 
         return jsonify({"success": True, "data": result, "total": len(result)})
@@ -1098,9 +1023,6 @@ def get_project_inspections(project_id):
         inspections = quality_service.get_project_inspections(
             project_id, start_date, end_date
         )
-
-        db_session.close()
-
         result = [insp.to_dict() for insp in inspections]
 
         return jsonify({"success": True, "data": result, "total": len(result)})
@@ -1189,9 +1111,6 @@ def export_dimensions_excel():
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
-
-        db_session.close()
-
         # 发送文件
         filename = f"尺寸数据_{project_id}_{part_id if part_id else '全部'}.xlsx"
         return send_file(
@@ -1214,9 +1133,6 @@ def clear_all_dimensions():
         service = DimensionService(db_session)
 
         deleted_count = service.clear_all_dimensions()
-
-        db_session.close()
-
         return jsonify({
             "success": True,
             "message": f"成功清空所有尺寸数据，共删除 {deleted_count} 条记录"

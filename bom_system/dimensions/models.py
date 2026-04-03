@@ -2,9 +2,9 @@
 尺寸数据模型
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from bom_system.models import db
+from bom_system.models import db, _utcnow
 
 
 class Dimension(db.Model):
@@ -34,11 +34,11 @@ class Dimension(db.Model):
     image_type = db.Column(db.String(20), default="canvas", comment="图片类型")
     combined_image_url = db.Column(db.String(255), comment="拼接图片URL")
     combined_image_data = db.Column(db.Text, comment="拼接图片数据(Base64)")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    created_at = db.Column(db.DateTime, default=_utcnow, comment="创建时间")
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=_utcnow,
+        onupdate=_utcnow,
         comment="更新时间",
     )
 
@@ -128,7 +128,7 @@ class DimensionVersion(db.Model):
     combined_image_data = db.Column(db.Text, comment="拼接图片数据(Base64)")
     modified_by = db.Column(db.String(50), comment="修改人")
     modification_reason = db.Column(db.Text, comment="修改原因")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    created_at = db.Column(db.DateTime, default=_utcnow, comment="创建时间")
 
     def to_dict(self):
         """转换为字典格式"""
@@ -186,11 +186,11 @@ class DimensionTemplate(db.Model):
     notes = db.Column(db.Text, comment="备注")
     is_system = db.Column(db.Boolean, default=False, comment="是否系统模板")
     created_by = db.Column(db.String(50), comment="创建人")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    created_at = db.Column(db.DateTime, default=_utcnow, comment="创建时间")
     updated_at = db.Column(
         db.DateTime, 
-        default=datetime.utcnow, 
-        onupdate=datetime.utcnow, 
+        default=_utcnow, 
+        onupdate=_utcnow, 
         comment="更新时间"
     )
 

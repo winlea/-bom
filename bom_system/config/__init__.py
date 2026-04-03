@@ -22,6 +22,18 @@ PLACEHOLDER_BG = config_manager.get("PLACEHOLDER_BG", "#f0f3f9")
 PLACEHOLDER_FG = config_manager.get("PLACEHOLDER_FG", "#2b4c7e")
 PLACEHOLDER_TEXT_FMT = config_manager.get("PLACEHOLDER_TEXT_FMT", "{part_number}")
 
+# Template file paths (overridable via environment variables)
+import os as _os
+_BASE_DIR = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+PSW_TEMPLATE_PATH = config_manager.get(
+    "PSW_TEMPLATE_PATH",
+    _os.path.join(_os.path.dirname(_BASE_DIR), "PSW_Template.xlsx"),
+)
+PROCESS_CAPABILITY_TEMPLATE_PATH = config_manager.get(
+    "PROCESS_CAPABILITY_TEMPLATE_PATH",
+    _os.path.join(_os.path.dirname(_BASE_DIR), "output", "01-初始过程能力分析报告 Y1393847.xls"),
+)
+
 __all__ = [
     "SQLALCHEMY_DATABASE_URI",
     "SQLALCHEMY_TRACK_MODIFICATIONS",
@@ -35,4 +47,6 @@ __all__ = [
     "PLACEHOLDER_BG",
     "PLACEHOLDER_FG",
     "PLACEHOLDER_TEXT_FMT",
+    "PSW_TEMPLATE_PATH",
+    "PROCESS_CAPABILITY_TEMPLATE_PATH",
 ]

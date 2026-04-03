@@ -1,29 +1,36 @@
+import os
+import time
+from typing import List
+
 from flask import Flask, render_template
 from flask_cors import CORS
 
 from bom_system.admin import admin_bp
+from bom_system.api.error_handler import register_error_handlers
 from bom_system.api_main import api_bp
 from bom_system.config.manager import ConfigManager
+from bom_system.database.session import init_db_engine
 from bom_system.dimensions.api import dimensions_bp
 from bom_system.dimensions.image_api import dimension_image_bp
 from bom_system.models import db
-# from bom_system.ods.api import ods_bp
-# from bom_system.ods.qualification_export_api import export_bp
-# from bom_system.ods.new_template_api import new_ods_bp
-# from bom_system.ods.enhanced_api import enhanced_ods_bp
-# from bom_system.ods.wz1d_api import wz1d_bp
-# from bom_system.ods.enhanced_wz1d_api import enhanced_wz1d_bp
-# from bom_system.parts import bp as parts_bp
 from bom_system.projects import bp as projects_bp
+from bom_system.templates.api import templates_bp
 
 # Initialize config manager
 config_manager = ConfigManager()
-import os
+
 # 使用绝对路径连接数据库
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'instance', 'bom_db.sqlite')
-SQLALCHEMY_DATABASE_URI = config_manager.get('DATABASE_URL', f'sqlite:///{DB_PATH}')
-SQLALCHEMY_TRACK_MODIFICATIONS = config_manager.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
+DB_PATH = os.path.join(BASE_DIR, "instance", "bom_db.sqlite")
+SQLALCHEMY_DATABASE_URI = config_manager.get(
+    "DATABASE_URL", f"sqlite:///{DB_PATH}"
+)
+SQLALCHEMY_TRACK_MODIFICATIONS = config_manager.get(
+    "SQLALCHEMY_TRACK_MODIFICATIONS", False
+)
+
+# 允许的 CORS 源列表
+CORS_ORIGINS = config_manager.get("CORS_ORIGINS", "").split(",") if config_manager.get("CORS_ORIGINS") else []
 
 
 def create_app() -> Flask:
@@ -32,52 +39,47 @@ def create_app() -> Flask:
     # Configure
     app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = SQLALCHEMY_TRACK_MODIFICATIONS
-    # Asset version to bust caches on UI updates
-    import time
-
     app.config["ASSET_VER"] = str(int(time.time()))
 
-    # Init extensions
+    # Init Flask-SQLAlchemy
     db.init_app(app)
 
-    # 配置CORS，允许前端跨域访问
+    # Init 统一数据库会话管理（请求级 session 生命周期）
+    init_db_engine(app)
+
+    # 配置 CORS
+    default_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
+        "http://localhost:5177",
+        "http://127.0.0.1:5177",
+    ]
+    origins = CORS_ORIGINS or default_origins
     CORS(
         app,
-        origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:5174",
-            "http://127.0.0.1:5174",
-            "http://localhost:5175",
-            "http://127.0.0.1:5175",
-            "http://localhost:5176",
-            "http://127.0.0.1:5176",
-            "http://localhost:5177",
-            "http://127.0.0.1:5177",
-        ],
+        origins=origins,
         allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     )
 
     # Blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
-    # app.register_blueprint(parts_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp, url_prefix="/api")
     app.register_blueprint(dimensions_bp)
     app.register_blueprint(dimension_image_bp)
-    # app.register_blueprint(ods_bp)
-    # app.register_blueprint(export_bp)
-    # app.register_blueprint(new_ods_bp)
-    # app.register_blueprint(enhanced_ods_bp)
-    # app.register_blueprint(wz1d_bp)
-    # app.register_blueprint(enhanced_wz1d_bp)
-    
-    # 注册动态预览API蓝图
-    # from bom_system.ods.dynamic_preview_api import dynamic_preview_bp
-    # app.register_blueprint(dynamic_preview_bp)
+    app.register_blueprint(templates_bp)
 
-    # Simple health endpoint
+    # 全局错误处理器（确保异常返回 JSON 而非 HTML）
+    register_error_handlers(app)
+
+    # Health endpoint
     @app.get("/health")
     def health():
         return {"status": "ok"}
@@ -86,10 +88,6 @@ def create_app() -> Flask:
     @app.get("/")
     def index():
         return render_template("index.html")
-
-
-
-
 
     @app.get("/parts")
     def parts_page():
@@ -101,18 +99,12 @@ def create_app() -> Flask:
 
     @app.get("/projects/<path:subpath>")
     def projects_catchall(subpath):
-        # SPA route for project details, let frontend handle routing
         return render_template("index.html")
 
-    # SPA fallback for other client-side routes (exclude API/static/uploads)
+    # SPA fallback
     @app.get("/<path:subpath>")
     def spa_fallback(subpath):
-        if (
-            subpath.startswith("api/")
-            or subpath.startswith("static/")
-            or subpath.startswith("uploads/")
-        ):
-            # Let Flask handle actual API/static routes (return 404 here)
+        if subpath.startswith(("api/", "static/", "uploads/")):
             return ("Not Found", 404)
         return render_template("index.html")
 
@@ -122,10 +114,8 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
-        # 导入所有模型
         from bom_system.models import import_all_models
 
         import_all_models()
-        # Create tables if not exist (MVP, later replace with migrations)
         db.create_all()
     app.run(host="0.0.0.0", port=5000, debug=True)

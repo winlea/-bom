@@ -174,7 +174,7 @@ class SimplePartValidator:
 
     def run_quick_validation(self):
         """运行快速验证"""
-        print("🚀 开始快速验证零件信息导入功能...")
+        logger.debug("🚀 开始快速验证零件信息导入功能...")
 
         # 测试零件
         test_parts = [
@@ -190,23 +190,22 @@ class SimplePartValidator:
                     template_files.append(file)
 
         if not template_files:
-            print("❌ 未找到模板文件，请确保templates目录包含WZ1D模板")
+            logger.debug("❌ 未找到模板文件，请确保templates目录包含WZ1D模板")
             return False
 
         # 验证每个模板和零件组合
         results = []
         for template in template_files:
             for part in test_parts:
-                print(f"📋 验证模板: {template}, 零件: {part['part_number']}")
+                logger.debug("📋 验证模板: {template}, 零件: {part['part_number']}")
                 result = self.validate_template_fill(template, part)
                 results.append(result)
 
                 if result["status"] == "success":
-                    print(
-                        f"   ✅ 成功: 填充了 {result['filled_placeholders']} 个占位符"
+                    logger.debug("   ✅ 成功: 填充了 {result['filled_placeholders']} 个占位符"
                     )
                 else:
-                    print(f"   ❌ 失败: {result['message']}")
+                    logger.debug("   ❌ 失败: {result['message']}")
 
         # 生成报告
         self._generate_quick_report(results)
@@ -215,13 +214,13 @@ class SimplePartValidator:
         success_count = sum(1 for r in results if r["status"] == "success")
         total_count = len(results)
 
-        print(f"\n📊 验证完成: {success_count}/{total_count} 个测试通过")
+        logger.debug("\n📊 验证完成: {success_count}/{total_count} 个测试通过")
 
         if success_count == total_count:
-            print("🎉 所有验证通过！您的零件信息可以正确导入")
+            logger.debug("🎉 所有验证通过！您的零件信息可以正确导入")
             return True
         else:
-            print("⚠️  部分验证失败，请查看详细报告")
+            logger.debug("⚠️  部分验证失败，请查看详细报告")
             return False
 
     def _generate_quick_report(self, results):
@@ -242,7 +241,7 @@ class SimplePartValidator:
         with open(report_file, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
 
-        print(f"📄 验证报告已保存: {report_file}")
+        logger.debug("📄 验证报告已保存: {report_file}")
 
 
 if __name__ == "__main__":

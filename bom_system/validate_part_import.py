@@ -58,7 +58,7 @@ class PartImportValidator:
         }
 
         try:
-            print(f"🔍 开始验证零件: {part_data['part_number']}")
+            logger.debug("🔍 开始验证零件: {part_data['part_number']}")
 
             # 1. 生成测试尺寸数据
             dimensions = self.test_generator.generate_test_dimensions(5)
@@ -97,17 +97,17 @@ class PartImportValidator:
                 placeholder_check = self._check_placeholders(filled_template, fill_data)
                 result["details"]["placeholder_check"] = placeholder_check
 
-                print(f"✅ 零件 {part_data['part_number']} 验证成功")
+                logger.debug("✅ 零件 {part_data['part_number']} 验证成功")
             else:
                 result["status"] = "failed"
                 result["details"]["template_filled"] = False
                 result["error"] = "模板填充失败"
-                print(f"❌ 零件 {part_data['part_number']} 验证失败")
+                logger.debug("❌ 零件 {part_data['part_number']} 验证失败")
 
         except Exception as e:
             result["status"] = "error"
             result["error"] = str(e)
-            print(f"❌ 零件 {part_data['part_number']} 验证出错: {str(e)}")
+            logger.debug("❌ 零件 {part_data['part_number']} 验证出错: {str(e)}")
 
         return result
 
@@ -128,7 +128,7 @@ class PartImportValidator:
         success_count = 0
 
         for i, part in enumerate(parts_list, 1):
-            print(f"\n🔄 验证第 {i}/{len(parts_list)} 个零件: {part['part_number']}")
+            logger.debug("\n🔄 验证第 {i}/{len(parts_list)} 个零件: {part['part_number']}")
 
             single_result = self.validate_single_part(part)
             result["parts_results"].append(single_result)
@@ -159,7 +159,7 @@ class PartImportValidator:
         edge_cases = self.test_generator.generate_edge_case_data()
 
         for case_name, case_data in edge_cases.items():
-            print(f"\n🧪 验证边界情况: {case_name}")
+            logger.debug("\n🧪 验证边界情况: {case_name}")
 
             case_result = {
                 "case_name": case_name,
@@ -189,7 +189,7 @@ class PartImportValidator:
     def run_complete_validation(self) -> Dict[str, Any]:
         """运行完整的验证流程"""
 
-        print("🚀 开始完整的零件信息导入验证流程")
+        logger.debug("🚀 开始完整的零件信息导入验证流程")
 
         # 1. 验证标准零件
         standard_part = self.test_generator.generate_test_part("stamping")
@@ -226,10 +226,10 @@ class PartImportValidator:
         # 6. 生成HTML可视化报告
         html_report = self._generate_html_report(complete_result)
 
-        print("\n✅ 验证完成！")
-        print(f"📁 输出目录: {self.output_dir}")
-        print(f"📊 详细报告: {report_file}")
-        print(f"🌐 HTML报告: {html_report}")
+        logger.debug("\n✅ 验证完成！")
+        logger.debug("📁 输出目录: {self.output_dir}")
+        logger.debug("📊 详细报告: {report_file}")
+        logger.debug("🌐 HTML报告: {html_report}")
 
         return complete_result
 
@@ -513,7 +513,7 @@ def main():
         # 快速验证单个零件
         test_part = validator.test_generator.generate_test_part("stamping")
         result = validator.validate_single_part(test_part)
-        print(f"\n快速验证结果: {result['status']}")
+        logger.debug("\n快速验证结果: {result['status']}")
     else:
         # 完整验证流程
         result = validator.run_complete_validation()
@@ -521,7 +521,7 @@ def main():
         # 打开HTML报告
         html_report = os.path.join(result["output_dir"], "validation_report.html")
         if os.path.exists(html_report):
-            print(f"\n🌐 打开报告: file://{html_report}")
+            logger.debug("\n🌐 打开报告: file://{html_report}")
 
 
 if __name__ == "__main__":

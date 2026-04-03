@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 
 from flask import Blueprint, jsonify, request, send_file
@@ -12,9 +13,16 @@ from .config import (
     PLACEHOLDER_TEXT_FMT,
     PLACEHOLDER_WIDTH,
 )
-from .models import BomTable, db
+from .database.session import get_db_session
+from .models import BomTable
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint("admin", __name__)
+
+# 防止意外清理: 必须在请求体中显式确认
+_CLEANUP_CONFIRM_KEY = "confirm"
+_CLEANUP_CONFIRM_VALUE = "DELETE_ALL_DATA"
 
 
 def _require_admin():
@@ -22,18 +30,37 @@ def _require_admin():
     if ADMIN_TOKEN and token != ADMIN_TOKEN:
         return False
     if not ADMIN_TOKEN:
-        # if not set, allow local operations (could tighten later)
         return True
     return True
 
 
 @admin_bp.post("/admin/cleanup")
 def cleanup_db():
+    """清空 BOM 表数据。必须在请求体中携带 {"confirm": "DELETE_ALL_DATA"} 才能执行。"""
     if not _require_admin():
+        logger.warning("cleanup_db: 未授权访问")
         return jsonify({"error": "unauthorized"}), 401
-    deleted = db.session.query(BomTable).delete()
-    db.session.commit()
-    return jsonify({"status": "success", "deleted": deleted})
+
+    payload = request.get_json(silent=True) or {}
+    confirm_value = payload.get(_CLEANUP_CONFIRM_KEY)
+
+    if confirm_value != _CLEANUP_CONFIRM_VALUE:
+        logger.warning("cleanup_db: 缺少确认参数，操作已拒绝")
+        return jsonify({
+            "error": "confirmation_required",
+            "message": f'请求体必须包含 {{"{_CLEANUP_CONFIRM_KEY}": "{_CLEANUP_CONFIRM_VALUE}"}} 才能执行清理',
+        }), 400
+
+    try:
+        session = get_db_session()
+        deleted = session.query(BomTable).delete()
+        session.commit()
+        logger.info("cleanup_db: 已删除 %d 条 BOM 记录", deleted)
+        return jsonify({"status": "success", "deleted": deleted})
+    except Exception as e:
+        session.rollback()
+        logger.error("cleanup_db: 清理失败 - %s", str(e))
+        return jsonify({"error": "cleanup_failed", "message": str(e)}), 500
 
 
 def _hex_to_rgb(hex_color: str):
@@ -55,13 +82,11 @@ def generate_placeholder(
 
     img = Image.new("RGB", (width, height), color=bg)
     draw = ImageDraw.Draw(img)
-    # choose font size proportional to width
     font_size = max(12, width // 12)
     try:
         font = ImageFont.truetype("arial.ttf", font_size)
     except Exception:
         font = ImageFont.load_default()
-    # center text
     text_w, text_h = draw.textbbox((0, 0), text, font=font)[2:]
     draw.text(((width - text_w) / 2, (height - text_h) / 2), text, fill=fg, font=font)
 
@@ -72,7 +97,8 @@ def generate_placeholder(
 
 @admin_bp.get("/placeholder/<int:record_id>.png")
 def placeholder_image(record_id: int):
-    rec = db.session.get(BomTable, record_id)
+    session = get_db_session()
+    rec = session.get(BomTable, record_id)
     if not rec:
         return jsonify({"error": "not found"}), 404
     data = generate_placeholder(rec.part_number)

@@ -177,12 +177,12 @@ class CorrectDimensionValidator:
 
     def run_correction_test(self):
         """运行修正后的测试"""
-        print("运行修正后的尺寸验证测试...")
+        logger.debug("运行修正后的尺寸验证测试...")
 
         results = []
 
         for part_number in self.real_dimensions.keys():
-            print(f"验证零件 {part_number}...")
+            logger.debug("验证零件 {part_number}...")
 
             # 创建修正后的模板
             filepath, dim_count = self.create_corrected_template(part_number)
@@ -203,9 +203,9 @@ class CorrectDimensionValidator:
             results.append(result)
 
             if validation["is_valid"]:
-                print(f"✓ 零件 {part_number} 验证通过")
+                logger.debug("✓ 零件 {part_number} 验证通过")
             else:
-                print(f"✗ 零件 {part_number} 验证失败: {validation['errors']}")
+                logger.debug("✗ 零件 {part_number} 验证失败: {validation['errors']}")
 
         # 生成测试报告
         report = {
@@ -224,11 +224,11 @@ class CorrectDimensionValidator:
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
 
-        print(f"\n修正后测试完成:")
-        print(f"总测试数: {report['total_tests']}")
-        print(f"通过测试: {report['passed_tests']}")
-        print(f"失败测试: {report['failed_tests']}")
-        print(f"详细报告: {report_path}")
+        logger.debug("\n修正后测试完成:")
+        logger.debug("总测试数: {report['total_tests']}")
+        logger.debug("通过测试: {report['passed_tests']}")
+        logger.debug("失败测试: {report['failed_tests']}")
+        logger.debug("详细报告: {report_path}")
 
         return results
 

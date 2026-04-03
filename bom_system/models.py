@@ -1,30 +1,29 @@
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+
+logger = logging.getLogger(__name__)
 
 # Simple DB init pattern; app factory will init with app
 
 db = SQLAlchemy()
 
 
+def _utcnow():
+    """Python 3.12+ 兼容的 UTC 时间获取（替代已废弃的 datetime.utcnow）"""
+    return datetime.now(timezone.utc)
+
+
 # 导入所有模型以确保它们被SQLAlchemy识别
 def import_all_models():
     """导入所有模型以确保它们被SQLAlchemy识别"""
     try:
-        print("导入 Dimension 模型...")
         from bom_system.dimensions.models import Dimension
-
-        print("Dimension 模型导入成功!")
+        logger.info("Dimension 模型导入成功")
     except ImportError as e:
-        print(f"Dimension 模型导入失败: {e}")
-        import traceback
-
-        traceback.print_exc()
-    # 确保当前文件中的模型也被识别
-    # Project, BomTable, ImportLog 等模型已经在当前文件中定义
-    # SQLAlchemy会自动识别它们
-    pass
+        logger.error("Dimension 模型导入失败: %s", e)
 
 
 class Project(db.Model):
@@ -33,7 +32,7 @@ class Project(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False, index=True)
     description = db.Column(db.String(255))
     status = db.Column(db.String(30), default="created")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=_utcnow, nullable=False)
     
     # 新增项目信息字段
     supplier_name = db.Column(db.String(200))  # 供方名称
@@ -68,7 +67,7 @@ class ImportLog(db.Model):
     created_count = db.Column(db.Integer)
     errors_count = db.Column(db.Integer)
     message = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=_utcnow, nullable=False)
 
     project = db.relationship("Project", backref="import_logs")
 
@@ -108,7 +107,7 @@ class BomTable(db.Model):
 
     # 其他
     net_weight_kg = db.Column(db.Float)  # 产品净重KG/PCS
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=_utcnow, nullable=False)
 
     def __repr__(self) -> str:
         return f"<BOM id={self.id} part_number={self.part_number}>"
@@ -127,7 +126,7 @@ class DrawingChange(db.Model):
     cr_number = db.Column(db.String(100), nullable=False)
     change_count = db.Column(db.Integer, nullable=False, default=1)
     change_date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=_utcnow, nullable=False)
 
     # 关系
     project = db.relationship("Project", backref="drawing_changes")

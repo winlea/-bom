@@ -4,7 +4,7 @@
 
 from datetime import datetime
 
-from bom_system.models import db
+from bom_system.models import db, _utcnow
 
 
 class DimensionInspection(db.Model):
@@ -21,11 +21,11 @@ class DimensionInspection(db.Model):
     actual_value = db.Column(db.String(20), nullable=False, comment="实际测量值")
     is_passed = db.Column(db.Boolean, nullable=False, comment="是否合格")
     inspection_date = db.Column(
-        db.DateTime, default=datetime.utcnow, comment="检验日期"
+        db.DateTime, default=_utcnow, comment="检验日期"
     )
     inspector = db.Column(db.String(50), comment="检验员")
     notes = db.Column(db.Text, comment="备注")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    created_at = db.Column(db.DateTime, default=_utcnow, comment="创建时间")
 
     def to_dict(self):
         """转换为字典格式"""
@@ -58,10 +58,10 @@ class QualityReport(db.Model):
     total_inspections = db.Column(db.Integer, nullable=False, comment="总检验数")
     passed_inspections = db.Column(db.Integer, nullable=False, comment="合格数")
     pass_rate = db.Column(db.Float, nullable=False, comment="合格率")
-    report_date = db.Column(db.DateTime, default=datetime.utcnow, comment="报告日期")
+    report_date = db.Column(db.DateTime, default=_utcnow, comment="报告日期")
     generated_by = db.Column(db.String(50), comment="生成人")
     notes = db.Column(db.Text, comment="备注")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, comment="创建时间")
+    created_at = db.Column(db.DateTime, default=_utcnow, comment="创建时间")
 
     def to_dict(self):
         """转换为字典格式"""
