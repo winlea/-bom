@@ -24,6 +24,11 @@ def import_all_models():
         logger.info("Dimension 模型导入成功")
     except ImportError as e:
         logger.error("Dimension 模型导入失败: %s", e)
+    try:
+        from bom_system.parts.models import Part, ProjectBomRelation, PartOperation
+        logger.info("Part 相关模型导入成功")
+    except ImportError as e:
+        logger.error("Part 相关模型导入失败: %s", e)
 
 
 class Project(db.Model):

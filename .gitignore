@@ -103,3 +103,7 @@ temp/
 templates/*.xlsx
 templates/*.ods
 !templates/example.xlsx
+
+# BOM System parts module
+!bom_system/parts/
+bom_system/parts/__pycache__/

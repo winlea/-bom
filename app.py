@@ -13,6 +13,8 @@ from bom_system.database.session import init_db_engine
 from bom_system.dimensions.api import dimensions_bp
 from bom_system.dimensions.image_api import dimension_image_bp
 from bom_system.models import db
+from bom_system.parts.api import parts_bp
+from bom_system.parts.bom_api import bom_bp
 from bom_system.projects import bp as projects_bp
 from bom_system.templates.api import templates_bp
 
@@ -75,6 +77,8 @@ def create_app() -> Flask:
     app.register_blueprint(dimensions_bp)
     app.register_blueprint(dimension_image_bp)
     app.register_blueprint(templates_bp)
+    app.register_blueprint(parts_bp)
+    app.register_blueprint(bom_bp)
 
     # 全局错误处理器（确保异常返回 JSON 而非 HTML）
     register_error_handlers(app)
