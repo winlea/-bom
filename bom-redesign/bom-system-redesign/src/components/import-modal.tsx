@@ -1,24 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, AlertCircle, CheckCircle2, RefreshCw, Info } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PROJECTS, PROJECT_IMPORT, DASHBOARD_RECENT } from '@/constants/api';
 
 // 类型定义
 type ProjectOption = { id: string; name: string };
@@ -31,7 +20,7 @@ type ImportLog = {
   errors_count?: number;
   created_at?: string;
   status?: string;
-  errors_preview?: any[];
+  errors_preview?: string[];
 };
 
 // 辅助函数
@@ -42,8 +31,8 @@ function parseCsvText(text: string) {
   while (idx < lines.length && lines[idx].trim() === '') idx++;
   if (idx >= lines.length) return { headers: [], rows: [] };
   const first = lines[idx];
-  const hdrs = first.split(',').map(h => h.trim());
-  const rows = lines.slice(idx + 1, idx + 6).map(ln => ln.split(',').map(c => c.trim()));
+  const hdrs = first.split(',').map((h) => h.trim());
+  const rows = lines.slice(idx + 1, idx + 6).map((ln) => ln.split(',').map((c) => c.trim()));
   return { headers: hdrs, rows };
 }
 
@@ -61,15 +50,13 @@ export default function ImportModal({
   // 基本状态
   const [open, setOpen] = useState<boolean>(!!controlledOpen);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string | undefined>(
-    projectId ? String(projectId) : undefined
-  );
+  const [selectedProject, setSelectedProject] = useState<string | undefined>(projectId ? String(projectId) : undefined);
   const [createNewProject, setCreateNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
-  const [previewRows, setPreviewRows] = useState<any[][]>([]);
+  const [previewRows, setPreviewRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
@@ -90,7 +77,7 @@ export default function ImportModal({
   useEffect(() => {
     async function loadProjects() {
       try {
-        const response = await fetch('/api/projects');
+        const response = await fetch(PROJECTS);
         const data = await response.json();
         const list = Array.isArray(data)
           ? data
@@ -100,7 +87,7 @@ export default function ImportModal({
               ? data.data.items
               : [];
         console.log('获取到的项目列表:', list);
-        const opts = list.map((p: any) => ({ id: String(p.id), name: p.name || `项目 ${p.id}` }));
+        const opts = list.map((p: ProjectOption) => ({ id: String(p.id), name: p.name || `项目 ${p.id}` }));
         setProjects(opts);
         if (!selectedProject && opts.length > 0) setSelectedProject(opts[0].id);
       } catch (e) {
@@ -145,7 +132,7 @@ export default function ImportModal({
         setHeaders(headers);
         setPreviewRows(rows);
         const defaultMap: Record<string, string> = {};
-        headers.forEach(h => {
+        headers.forEach((h) => {
           const key = h.toLowerCase();
           if (key.includes('part') && key.includes('number')) defaultMap[h] = 'part_number';
           else if (key.includes('part') && key.includes('name')) defaultMap[h] = 'part_name';
@@ -238,11 +225,11 @@ export default function ImportModal({
         // 创建新项目
         console.log('开始创建项目:', {
           name: newProjectName.trim(),
-          description: newProjectDesc.trim() || undefined
+          description: newProjectDesc.trim() || undefined,
         });
-        
+
         // 使用相对路径，通过vite代理访问
-        const createProjectResponse = await fetch('/api/projects', {
+        const createProjectResponse = await fetch(PROJECTS, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -252,20 +239,22 @@ export default function ImportModal({
         });
 
         console.log('创建项目响应状态:', createProjectResponse.status);
-        
+
         if (!createProjectResponse.ok) {
           try {
             // 读取响应体一次
             const responseText = await createProjectResponse.text();
             console.log('创建项目错误响应:', responseText);
-            
+
             // 尝试解析为JSON
             try {
               const errorData = JSON.parse(responseText);
               console.log('创建项目错误数据:', errorData);
               const errorMessage = errorData?.message || errorData?.error || '创建新项目失败';
               const errorDetails = errorData?.details || errorData?.errors;
-              const errorText = errorDetails ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}` : errorMessage;
+              const errorText = errorDetails
+                ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}`
+                : errorMessage;
               console.log('创建项目错误:', errorText);
               setError(errorText);
             } catch (parseErr) {
@@ -321,15 +310,14 @@ export default function ImportModal({
       fd.append('project_id', projectIdToUse);
       fd.append('mapping', JSON.stringify(mapping || {}));
 
-      const response = await fetch('/api/import/bom', {
+      const response = await fetch(PROJECT_IMPORT, {
         method: 'POST',
         body: fd,
       });
 
       if (response.ok) {
         const data = await response.json();
-        const importLogId =
-          data && (data.import_log_id || data.id) ? data.import_log_id || data.id : null;
+        const importLogId = data && (data.import_log_id || data.id) ? data.import_log_id || data.id : null;
         const createdCount =
           data && typeof data.created_count === 'number'
             ? data.created_count
@@ -378,23 +366,27 @@ export default function ImportModal({
           setResultMessage('导入已提交，后台可能仍在处理');
         }
       } else if (!response.ok) {
+        try {
+          // 读取响应体一次
+          const responseText = await response.text();
+
+          // 尝试解析为JSON
           try {
-            // 读取响应体一次
-            const responseText = await response.text();
-            
-            // 尝试解析为JSON
-            try {
-              const errorData = JSON.parse(responseText);
-              const errorMessage = errorData?.message || errorData?.error || `导入失败：HTTP ${response.status}`;
-              const errorDetails = errorData?.details || errorData?.errors;
-              setError(errorDetails ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}` : errorMessage);
-            } catch {
-              setError(`导入失败：HTTP ${response.status} ${responseText}`);
-            }
-          } catch (err) {
-            setError(`导入失败：${(err as Error).message || String(err)}`);
+            const errorData = JSON.parse(responseText);
+            const errorMessage = errorData?.message || errorData?.error || `导入失败：HTTP ${response.status}`;
+            const errorDetails = errorData?.details || errorData?.errors;
+            setError(
+              errorDetails
+                ? `${errorMessage}: ${typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails)}`
+                : errorMessage
+            );
+          } catch {
+            setError(`导入失败：HTTP ${response.status} ${responseText}`);
           }
+        } catch (err) {
+          setError(`导入失败：${(err as Error).message || String(err)}`);
         }
+      }
     } catch (e: any) {
       setError(String(e?.message || e));
     } finally {
@@ -472,15 +464,13 @@ export default function ImportModal({
 
               {!createNewProject ? (
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">
-                    选择现有项目
-                  </label>
-                  <Select onValueChange={v => setSelectedProject(v)} value={selectedProject}>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">选择现有项目</label>
+                  <Select onValueChange={(v) => setSelectedProject(v)} value={selectedProject}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="选择项目" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map(p => (
+                      {projects.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
                         </SelectItem>
@@ -491,23 +481,19 @@ export default function ImportModal({
               ) : (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-1 block">
-                      新项目名称
-                    </label>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">新项目名称</label>
                     <Input
                       placeholder="输入项目名称"
                       value={newProjectName}
-                      onChange={e => setNewProjectName(e.target.value)}
+                      onChange={(e) => setNewProjectName(e.target.value)}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-1 block">
-                      项目描述 (可选)
-                    </label>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">项目描述 (可选)</label>
                     <Input
                       placeholder="输入项目描述"
                       value={newProjectDesc}
-                      onChange={e => setNewProjectDesc(e.target.value)}
+                      onChange={(e) => setNewProjectDesc(e.target.value)}
                     />
                   </div>
                 </div>
@@ -519,7 +505,7 @@ export default function ImportModal({
                   <Input
                     type="file"
                     accept=".csv,.xlsx,.xls"
-                    onChange={e => handleFileChange(e.target.files ? e.target.files[0] : undefined)}
+                    onChange={(e) => handleFileChange(e.target.files ? e.target.files[0] : undefined)}
                     className="cursor-pointer"
                   />
                 </div>
@@ -551,10 +537,7 @@ export default function ImportModal({
                       {importLog.filename || `导入任务 ${importLog.id}`}
                     </div>
                     <div className="text-xs text-slate-500 mt-1">
-                      <Badge
-                        variant="outline"
-                        className="mr-2 bg-blue-50 text-blue-700 border-blue-200"
-                      >
+                      <Badge variant="outline" className="mr-2 bg-blue-50 text-blue-700 border-blue-200">
                         ID: {importLog.id}
                       </Badge>
                       <Badge variant="outline" className="mr-2">
@@ -568,8 +551,7 @@ export default function ImportModal({
                       <div className="flex items-center">
                         <CheckCircle2 size={14} className="text-green-600 mr-1" />
                         <span className="text-sm">
-                          已创建:{' '}
-                          <span className="font-medium">{importLog.created_count ?? 0}</span>
+                          已创建: <span className="font-medium">{importLog.created_count ?? 0}</span>
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -582,12 +564,7 @@ export default function ImportModal({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRefreshImportLog}
-                      className="flex items-center"
-                    >
+                    <Button variant="outline" size="sm" onClick={handleRefreshImportLog} className="flex items-center">
                       <RefreshCw size={14} className="mr-1" /> 检查状态
                     </Button>
                     <Button
@@ -605,8 +582,8 @@ export default function ImportModal({
                   <div className="mt-3 p-3 bg-red-50 rounded-md border border-red-200">
                     <div className="font-medium text-red-800 mb-1">错误预览（最多 10 条）</div>
                     <ul className="list-disc ml-5 text-xs text-red-700">
-                      {importLog.errors_preview.slice(0, 10).map((err: any, i: number) => (
-                        <li key={i}>{typeof err === 'string' ? err : JSON.stringify(err)}</li>
+                      {importLog.errors_preview.slice(0, 10).map((err, i) => (
+                        <li key={i}>{err}</li>
                       ))}
                     </ul>
                   </div>
@@ -620,19 +597,16 @@ export default function ImportModal({
                   <Info size={16} className="mr-2 text-blue-600" /> 字段映射（自动匹配，可调整）
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {headers.map(h => (
+                  {headers.map((h) => (
                     <div key={h} className="flex items-center gap-2 bg-slate-50 p-2 rounded-md">
                       <div className="flex-1 text-sm font-medium">{h}</div>
-                      <Select
-                        value={mapping[h] || ''}
-                        onValueChange={v => setMapping(m => ({ ...m, [h]: v }))}
-                      >
+                      <Select value={mapping[h] || ''} onValueChange={(v) => setMapping((m) => ({ ...m, [h]: v }))}>
                         <SelectTrigger className="w-48">
                           <SelectValue placeholder="请选择字段" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="">不导入</SelectItem>
-                          {backendFields.map(bf => (
+                          {backendFields.map((bf) => (
                             <SelectItem key={bf} value={bf}>
                               {bf}
                             </SelectItem>
@@ -654,7 +628,7 @@ export default function ImportModal({
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-b">
                       <tr>
-                        {headers.map(h => (
+                        {headers.map((h) => (
                           <th key={h} className="py-2 px-3 text-left font-medium text-slate-700">
                             {h}
                           </th>

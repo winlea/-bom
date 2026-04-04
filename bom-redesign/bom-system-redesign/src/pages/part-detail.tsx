@@ -2,14 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout, { Breadcrumb } from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Package,
@@ -93,9 +86,7 @@ export default function PartDetailPage() {
         const dimensionsResponse = await fetch(`/api/parts/${id}/dimensions`);
         if (dimensionsResponse.ok) {
           const dimensionsData = await dimensionsResponse.json();
-          setDimensions(
-            Array.isArray(dimensionsData) ? dimensionsData : dimensionsData.items || []
-          );
+          setDimensions(Array.isArray(dimensionsData) ? dimensionsData : dimensionsData.items || []);
         }
       } catch (error) {
         console.error('加载零件详情时出错:', error);
@@ -191,10 +182,7 @@ export default function PartDetailPage() {
           </div>
 
           <div className="flex gap-3 mt-4 md:mt-0">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/parts?project_id=${part.project_id}`)}
-            >
+            <Button variant="outline" onClick={() => navigate(`/parts?project_id=${part.project_id}`)}>
               <ArrowLeft size={16} className="mr-1" /> 返回列表
             </Button>
             <Button variant="outline" onClick={() => navigate(`/parts/${id}/edit`)}>
@@ -214,11 +202,7 @@ export default function PartDetailPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                    disabled={isDeleting}
-                  >
+                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
                     取消
                   </Button>
                   <Button variant="destructive" onClick={handleDeletePart} disabled={isDeleting}>
@@ -357,7 +341,7 @@ export default function PartDetailPage() {
                       <h3 className="text-lg font-medium mb-2">尺寸概览</h3>
                       {dimensions.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {dimensions.slice(0, 4).map(dimension => (
+                          {dimensions.slice(0, 4).map((dimension) => (
                             <Card key={dimension.id} className="bg-slate-50">
                               <CardContent className="p-4">
                                 <div className="flex justify-between items-center">
@@ -384,11 +368,7 @@ export default function PartDetailPage() {
                       )}
 
                       {dimensions.length > 4 && (
-                        <Button
-                          variant="link"
-                          className="mt-2 p-0"
-                          onClick={() => setActiveTab('dimensions')}
-                        >
+                        <Button variant="link" className="mt-2 p-0" onClick={() => setActiveTab('dimensions')}>
                           查看全部 {dimensions.length} 个尺寸 →
                         </Button>
                       )}
@@ -423,15 +403,11 @@ export default function PartDetailPage() {
                           </thead>
                           <tbody>
                             {dimensions.map((dimension, index) => (
-                              <tr
-                                key={dimension.id}
-                                className={index % 2 === 0 ? '' : 'bg-slate-50'}
-                              >
+                              <tr key={dimension.id} className={index % 2 === 0 ? '' : 'bg-slate-50'}>
                                 <td className="p-3">{dimension.name}</td>
                                 <td className="p-3 font-medium">{dimension.value}</td>
                                 <td className="p-3">
-                                  {dimension.tolerance_plus !== undefined &&
-                                  dimension.tolerance_minus !== undefined ? (
+                                  {dimension.tolerance_plus !== undefined && dimension.tolerance_minus !== undefined ? (
                                     <>
                                       +{dimension.tolerance_plus}/-{dimension.tolerance_minus}
                                     </>
@@ -458,9 +434,7 @@ export default function PartDetailPage() {
                       <div className="text-center py-8 bg-slate-50 rounded-md">
                         <Ruler className="h-12 w-12 text-slate-400 mx-auto mb-2" />
                         <p className="text-slate-500 mb-4">该零件暂无尺寸数据</p>
-                        <Button onClick={() => navigate(`/dimensions/new?part_id=${part.id}`)}>
-                          添加尺寸数据
-                        </Button>
+                        <Button onClick={() => navigate(`/dimensions/new?part_id=${part.id}`)}>添加尺寸数据</Button>
                       </div>
                     )}
                   </div>
@@ -470,9 +444,7 @@ export default function PartDetailPage() {
                   <div>
                     <h3 className="text-lg font-medium mb-2">备注</h3>
                     {part.notes ? (
-                      <div className="bg-slate-50 p-4 rounded-md whitespace-pre-wrap">
-                        {part.notes}
-                      </div>
+                      <div className="bg-slate-50 p-4 rounded-md whitespace-pre-wrap">{part.notes}</div>
                     ) : (
                       <div className="text-center py-8 bg-slate-50 rounded-md">
                         <FileText className="h-12 w-12 text-slate-400 mx-auto mb-2" />

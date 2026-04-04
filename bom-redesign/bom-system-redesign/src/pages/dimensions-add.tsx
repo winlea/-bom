@@ -6,13 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -91,7 +85,7 @@ export default function DimensionsAddPage() {
 
           // 如果没有选择项目且有项目列表，选择第一个
           if (!formData.project_id && projectsList.length > 0) {
-            setFormData(prev => ({ ...prev, project_id: projectsList[0].id }));
+            setFormData((prev) => ({ ...prev, project_id: projectsList[0].id }));
           }
         }
       } catch (error) {
@@ -131,8 +125,8 @@ export default function DimensionsAddPage() {
 
   // 处理尺寸类型变化
   function handleDimensionTypeChange(type: string) {
-    const typeConfig = dimensionTypes.find(t => t.value === type);
-    setFormData(prev => ({
+    const typeConfig = dimensionTypes.find((t) => t.value === type);
+    setFormData((prev) => ({
       ...prev,
       dimensionType: type,
       fcfSymbol: typeConfig?.symbol === '·' ? '' : typeConfig?.symbol || '',
@@ -256,8 +250,8 @@ export default function DimensionsAddPage() {
     }
   }
 
-  const currentProject = projects.find(p => p.id === formData.project_id);
-  const selectedType = dimensionTypes.find(t => t.value === formData.dimensionType);
+  const currentProject = projects.find((p) => p.id === formData.project_id);
+  const selectedType = dimensionTypes.find((t) => t.value === formData.dimensionType);
   const validation = validateForm();
 
   return (
@@ -277,16 +271,11 @@ export default function DimensionsAddPage() {
             <h1 className="text-2xl font-bold flex items-center text-slate-800">
               <Ruler className="mr-2 text-blue-600" size={24} /> 添加尺寸
             </h1>
-            <p className="text-slate-500 mt-1">
-              为项目 "{currentProject?.name || '未选择'}" 添加新的尺寸记录
-            </p>
+            <p className="text-slate-500 mt-1">为项目 "{currentProject?.name || '未选择'}" 添加新的尺寸记录</p>
           </div>
 
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/dimensions?project_id=${formData.project_id}`)}
-            >
+            <Button variant="outline" onClick={() => navigate(`/dimensions?project_id=${formData.project_id}`)}>
               <ArrowLeft size={16} className="mr-1" /> 返回列表
             </Button>
             <Button
@@ -332,7 +321,7 @@ export default function DimensionsAddPage() {
                         <Input
                           id="name"
                           value={formData.name}
-                          onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                           placeholder="例如：主轴孔径"
                         />
                       </div>
@@ -341,15 +330,13 @@ export default function DimensionsAddPage() {
                         <Label htmlFor="project">所属项目 *</Label>
                         <Select
                           value={String(formData.project_id)}
-                          onValueChange={value =>
-                            setFormData(prev => ({ ...prev, project_id: parseInt(value) }))
-                          }
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, project_id: parseInt(value) }))}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="选择项目" />
                           </SelectTrigger>
                           <SelectContent>
-                            {projects.map(project => (
+                            {projects.map((project) => (
                               <SelectItem key={project.id} value={String(project.id)}>
                                 {project.name}
                               </SelectItem>
@@ -364,9 +351,7 @@ export default function DimensionsAddPage() {
                       <Textarea
                         id="description"
                         value={formData.description}
-                        onChange={e =>
-                          setFormData(prev => ({ ...prev, description: e.target.value }))
-                        }
+                        onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                         placeholder="详细描述这个尺寸的用途和要求..."
                         rows={3}
                       />
@@ -375,7 +360,7 @@ export default function DimensionsAddPage() {
                     <div className="space-y-2">
                       <Label>尺寸类型</Label>
                       <div className="grid grid-cols-2 gap-3">
-                        {dimensionTypes.map(type => (
+                        {dimensionTypes.map((type) => (
                           <div
                             key={type.value}
                             className={`p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -421,9 +406,7 @@ export default function DimensionsAddPage() {
                           type="number"
                           step="0.001"
                           value={formData.nominal}
-                          onChange={e =>
-                            setFormData(prev => ({ ...prev, nominal: e.target.value }))
-                          }
+                          onChange={(e) => setFormData((prev) => ({ ...prev, nominal: e.target.value }))}
                           placeholder="12.000"
                         />
                       </div>
@@ -435,9 +418,7 @@ export default function DimensionsAddPage() {
                           type="number"
                           step="0.001"
                           value={formData.upperTolerance}
-                          onChange={e =>
-                            setFormData(prev => ({ ...prev, upperTolerance: e.target.value }))
-                          }
+                          onChange={(e) => setFormData((prev) => ({ ...prev, upperTolerance: e.target.value }))}
                           placeholder="0.500"
                         />
                       </div>
@@ -449,9 +430,7 @@ export default function DimensionsAddPage() {
                           type="number"
                           step="0.001"
                           value={formData.lowerTolerance}
-                          onChange={e =>
-                            setFormData(prev => ({ ...prev, lowerTolerance: e.target.value }))
-                          }
+                          onChange={(e) => setFormData((prev) => ({ ...prev, lowerTolerance: e.target.value }))}
                           placeholder="-0.500"
                         />
                       </div>
@@ -461,13 +440,13 @@ export default function DimensionsAddPage() {
                       <Label htmlFor="unit">单位</Label>
                       <Select
                         value={formData.unit}
-                        onValueChange={value => setFormData(prev => ({ ...prev, unit: value }))}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, unit: value }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="选择单位" />
                         </SelectTrigger>
                         <SelectContent>
-                          {units.map(unit => (
+                          {units.map((unit) => (
                             <SelectItem key={unit.value} value={unit.value}>
                               {unit.label}
                             </SelectItem>
@@ -508,7 +487,7 @@ export default function DimensionsAddPage() {
                         <Input
                           id="datum"
                           value={formData.datum}
-                          onChange={e => setFormData(prev => ({ ...prev, datum: e.target.value }))}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, datum: e.target.value }))}
                           placeholder="A, B, C"
                         />
                       </div>
@@ -518,8 +497,8 @@ export default function DimensionsAddPage() {
                         <Input
                           id="special"
                           value={formData.specialCharacteristic}
-                          onChange={e =>
-                            setFormData(prev => ({
+                          onChange={(e) =>
+                            setFormData((prev) => ({
                               ...prev,
                               specialCharacteristic: e.target.value,
                             }))
@@ -547,9 +526,7 @@ export default function DimensionsAddPage() {
                             type="number"
                             step="0.001"
                             value={formData.fcfValue}
-                            onChange={e =>
-                              setFormData(prev => ({ ...prev, fcfValue: e.target.value }))
-                            }
+                            onChange={(e) => setFormData((prev) => ({ ...prev, fcfValue: e.target.value }))}
                             placeholder="0.500"
                           />
                         </div>
@@ -558,15 +535,13 @@ export default function DimensionsAddPage() {
                           <Label htmlFor="fcfModifier">修饰符</Label>
                           <Select
                             value={formData.fcfModifier}
-                            onValueChange={value =>
-                              setFormData(prev => ({ ...prev, fcfModifier: value }))
-                            }
+                            onValueChange={(value) => setFormData((prev) => ({ ...prev, fcfModifier: value }))}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="选择修饰符" />
                             </SelectTrigger>
                             <SelectContent>
-                              {modifiers.map(modifier => (
+                              {modifiers.map((modifier) => (
                                 <SelectItem key={modifier.value} value={modifier.value}>
                                   {modifier.label}
                                 </SelectItem>
@@ -579,7 +554,7 @@ export default function DimensionsAddPage() {
                       <div className="space-y-2">
                         <Label>基准序列</Label>
                         <div className="flex gap-2 flex-wrap">
-                          {['A', 'B', 'C', 'D', 'E', 'F'].map(datum => (
+                          {['A', 'B', 'C', 'D', 'E', 'F'].map((datum) => (
                             <Button
                               key={datum}
                               type="button"
@@ -588,9 +563,9 @@ export default function DimensionsAddPage() {
                               className="w-10 h-10 p-0"
                               onClick={() => {
                                 const newDatums = formData.fcfDatums.includes(datum)
-                                  ? formData.fcfDatums.filter(d => d !== datum)
+                                  ? formData.fcfDatums.filter((d) => d !== datum)
                                   : [...formData.fcfDatums, datum];
-                                setFormData(prev => ({ ...prev, fcfDatums: newDatums }));
+                                setFormData((prev) => ({ ...prev, fcfDatums: newDatums }));
                               }}
                             >
                               {datum}
@@ -610,7 +585,7 @@ export default function DimensionsAddPage() {
                   <CardContent>
                     <Textarea
                       value={formData.notes}
-                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                       placeholder="添加备注信息..."
                       rows={4}
                     />

@@ -1,4 +1,5 @@
 import glob
+import logging
 import os
 import time
 from typing import Optional
@@ -12,6 +13,8 @@ from ..models import BomTable, ImportLog, Project, db
 from ..api.response import APIResponse
 from . import bp
 from bom_system.database.session import get_db_session
+
+logger = logging.getLogger(__name__)
 
 
 # CRUD for projects
@@ -275,9 +278,9 @@ def update_project(pid: int):
 @bp.get("/projects/<int:pid>")
 def get_project(pid: int):
     """
-    session = get_db_session()
     返回单个项目详情，供前端按项目 id 请求使用。
     """
+    session = get_db_session()
     try:
         p = session.get(Project, pid)
         if not p:
@@ -382,7 +385,6 @@ def dashboard_recent():
 @bp.post("/projects/<int:pid>/import")
 def import_project_bom(pid: int):
     """
-    session = get_db_session()
     接收项目级别的 BOM 导入文件（multipart/form-data）
     - file: 上传的 CSV 或 XLSX 文件（可选）
     - mapping: 可选的字段映射 JSON 字符串（前端可传）
@@ -391,6 +393,7 @@ def import_project_bom(pid: int):
     - 创建一条 ImportLog 记录（created_count/errors_count 初始为 0）
     - 返回 202 Accepted 并返回 import_log id（实际导入可由后台任务或手动触发）
     """
+    session = get_db_session()
     p = session.get(Project, pid)
     if not p:
         return APIResponse.not_found(

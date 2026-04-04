@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Package,
   FolderOpen,
@@ -23,6 +16,24 @@ import {
   FileSpreadsheet,
   Activity,
 } from 'lucide-react';
+import { DASHBOARD_RECENT } from '@/constants/api';
+
+// 项目类型定义
+interface Project {
+  id: number;
+  name: string;
+  supplier_name?: string;
+  customer_name?: string;
+  created_at?: string;
+}
+
+// 系统统计类型定义
+interface SystemStats {
+  totalProjects: number;
+  totalParts: number;
+  totalDimensions: number;
+  version: string;
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -123,17 +134,32 @@ export default function HomePage() {
   ];
 
   // 最近项目数据
-  const [recentProjects, setRecentProjects] = useState<any[]>([]);
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
+  const [systemStats, setSystemStats] = useState<SystemStats>({
+    totalProjects: 0,
+    totalParts: 0,
+    totalDimensions: 0,
+    version: 'v2.0.0',
+  });
   const [loading, setLoading] = useState<boolean>(true);
 
-  // 从后端API获取最近项目数据
+  // 从后端API获取最近项目数据和系统统计
   useEffect(() => {
-    const fetchRecentProjects = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const response = await fetch('/api/dashboard/recent');
+        const response = await fetch(DASHBOARD_RECENT);
         if (response.ok) {
           const data = await response.json();
           setRecentProjects(data.recent_projects || []);
+          // 如果后端返回统计信息，更新系统状态
+          if (data.stats) {
+            setSystemStats((prev) => ({
+              ...prev,
+              totalProjects: data.stats.totalProjects || data.stats.total_projects || 0,
+              totalParts: data.stats.totalParts || data.stats.total_parts || 0,
+              totalDimensions: data.stats.totalDimensions || data.stats.total_dimensions || 0,
+            }));
+          }
         } else {
           console.error('获取最近项目失败');
         }
@@ -144,7 +170,7 @@ export default function HomePage() {
       }
     };
 
-    fetchRecentProjects();
+    fetchDashboardData();
   }, []);
 
   return (
@@ -155,10 +181,7 @@ export default function HomePage() {
           <h1 className="text-3xl font-bold mb-2">欢迎使用BOM管理系统</h1>
           <p className="text-blue-100 mb-6">高效管理您的物料清单和零件数据</p>
           <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={() => navigate('/projects/new')}
-              className="bg-white text-blue-700 hover:bg-blue-50"
-            >
+            <Button onClick={() => navigate('/projects/new')} className="bg-white text-blue-700 hover:bg-blue-50">
               <FolderOpen className="mr-2 h-4 w-4" /> 创建新项目
             </Button>
             <Button
@@ -181,9 +204,7 @@ export default function HomePage() {
               onClick={() => navigate(module.path)}
             >
               <CardContent className="p-6">
-                <div className={`rounded-full p-3 inline-block mb-3 ${module.color}`}>
-                  {module.icon}
-                </div>
+                <div className={`rounded-full p-3 inline-block mb-3 ${module.color}`}>{module.icon}</div>
                 <h3 className="text-lg font-medium mb-1">{module.title}</h3>
                 <p className="text-sm text-slate-500">{module.description}</p>
               </CardContent>
@@ -206,7 +227,7 @@ export default function HomePage() {
                       <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
                     </div>
                   ) : recentProjects.length > 0 ? (
-                    recentProjects.map(project => (
+                    recentProjects.map((project) => (
                       <div
                         key={project.id}
                         className="flex items-center justify-between p-3 rounded-md hover:bg-slate-50 cursor-pointer"
@@ -218,16 +239,18 @@ export default function HomePage() {
                           </div>
                           <div>
                             <h4 className="font-medium">{project.name}</h4>
-                            <p className="text-sm text-slate-500">{project.supplier_name || '无供应商'} - {project.customer_name || '无客户'}</p>
+                            <p className="text-sm text-slate-500">
+                              {project.supplier_name || '无供应商'} - {project.customer_name || '无客户'}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-sm text-slate-500">{project.created_at ? new Date(project.created_at).toLocaleDateString() : '未知'}</div>
+                        <div className="text-sm text-slate-500">
+                          {project.created_at ? new Date(project.created_at).toLocaleDateString() : '未知'}
+                        </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center p-8 text-slate-500">
-                      暂无项目数据
-                    </div>
+                    <div className="text-center p-8 text-slate-500">暂无项目数据</div>
                   )}
                 </div>
               </CardContent>
@@ -247,43 +270,23 @@ export default function HomePage() {
                 <CardDescription>常用功能快速入口</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/projects/new')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/projects/new')}>
                   <FolderOpen className="mr-2 h-4 w-4 text-blue-600" />
                   创建新项目
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/import')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/import')}>
                   <Upload className="mr-2 h-4 w-4 text-green-600" />
                   导入BOM数据
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/export')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/export')}>
                   <Download className="mr-2 h-4 w-4 text-orange-600" />
                   导出项目数据
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/ods')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/ods')}>
                   <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-600" />
                   生成ODS文档
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/psw')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/psw')}>
                   <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-600" />
                   生成PSW文档
                 </Button>
@@ -303,19 +306,11 @@ export default function HomePage() {
                   <BarChart3 className="mr-2 h-4 w-4 text-amber-600" />
                   全尺寸合格率
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/reports')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/reports')}>
                   <BarChart3 className="mr-2 h-4 w-4 text-purple-600" />
                   查看数据报表
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/drawing-change')}
-                >
+                <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/drawing-change')}>
                   <FileText className="mr-2 h-4 w-4 text-red-600" />
                   图纸变更管理
                 </Button>
@@ -331,19 +326,19 @@ export default function HomePage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">项目总数</span>
-                    <span className="font-medium">24</span>
+                    <span className="font-medium">{systemStats.totalProjects}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">零件总数</span>
-                    <span className="font-medium">1,245</span>
+                    <span className="font-medium">{systemStats.totalParts.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">尺寸记录</span>
-                    <span className="font-medium">3,782</span>
+                    <span className="font-medium">{systemStats.totalDimensions.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">系统版本</span>
-                    <span className="font-medium">v2.0.0</span>
+                    <span className="font-medium">{systemStats.version}</span>
                   </div>
                 </div>
               </CardContent>

@@ -108,13 +108,13 @@ export default function DrawingChangePage() {
   // 选择零件时自动填充零件信息
   useEffect(() => {
     if (drawingChange.part_id) {
-      const selectedPart = parts.find(p => p.id === drawingChange.part_id);
+      const selectedPart = parts.find((p) => p.id === drawingChange.part_id);
       if (selectedPart) {
-        setDrawingChange(prev => ({
+        setDrawingChange((prev) => ({
           ...prev,
           part_name: selectedPart.part_name,
           part_number: selectedPart.part_number,
-          drawing_number: selectedPart.drawing_2d || ''
+          drawing_number: selectedPart.drawing_2d || '',
         }));
       }
     }
@@ -168,16 +168,10 @@ export default function DrawingChangePage() {
               <FileText className="mr-2 text-blue-600" size={24} />
               图纸变更编辑
             </h1>
-            <p className="text-slate-500 mt-1">
-              编辑图纸变更信息
-            </p>
+            <p className="text-slate-500 mt-1">编辑图纸变更信息</p>
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="flex items-center"
-          >
+          <Button variant="outline" onClick={() => navigate('/')} className="flex items-center">
             <ArrowLeft size={16} className="mr-1" />
             返回首页
           </Button>
@@ -187,12 +181,7 @@ export default function DrawingChangePage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -215,12 +204,7 @@ export default function DrawingChangePage() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -260,7 +244,7 @@ export default function DrawingChangePage() {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                       </div>
                     ) : (
-                      projects.map(project => (
+                      projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
                         </SelectItem>
@@ -280,7 +264,7 @@ export default function DrawingChangePage() {
                   disabled={!drawingChange.project_id}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={drawingChange.project_id ? "请选择零件" : "请先选择项目"} />
+                    <SelectValue placeholder={drawingChange.project_id ? '请选择零件' : '请先选择项目'} />
                   </SelectTrigger>
                   <SelectContent>
                     {loadingParts ? (
@@ -288,7 +272,7 @@ export default function DrawingChangePage() {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                       </div>
                     ) : (
-                      parts.map(part => (
+                      parts.map((part) => (
                         <SelectItem key={part.id} value={part.id}>
                           <div className="flex flex-col">
                             <span className="font-medium">{part.part_name}</span>
@@ -409,11 +393,7 @@ export default function DrawingChangePage() {
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                      id="change_date"
-                    >
+                    <Button variant="outline" className="w-full justify-start text-left font-normal" id="change_date">
                       {drawingChange.change_date || '选择日期'}
                     </Button>
                   </PopoverTrigger>
@@ -440,7 +420,14 @@ export default function DrawingChangePage() {
             </Button>
             <Button
               type="submit"
-              disabled={loading || !drawingChange.project_id || !drawingChange.part_id || !drawingChange.part_name || !drawingChange.part_number || !drawingChange.drawing_number}
+              disabled={
+                loading ||
+                !drawingChange.project_id ||
+                !drawingChange.part_id ||
+                !drawingChange.part_name ||
+                !drawingChange.part_number ||
+                !drawingChange.drawing_number
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {loading ? (

@@ -5,30 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Package,
-  ArrowLeft,
-  Save,
-  Upload,
-  Image as ImageIcon,
-  Trash2,
-  AlertCircle,
-} from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Package, ArrowLeft, Save, Upload, Image as ImageIcon, Trash2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -123,11 +102,11 @@ export default function PartEditPage() {
   // 处理表单字段变化
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
-    setPart(prev => ({ ...prev, [name]: value }));
+    setPart((prev) => ({ ...prev, [name]: value }));
 
     // 清除该字段的错误
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -139,11 +118,11 @@ export default function PartEditPage() {
   function handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     const numValue = value === '' ? undefined : Number(value);
-    setPart(prev => ({ ...prev, [name]: numValue }));
+    setPart((prev) => ({ ...prev, [name]: numValue }));
 
     // 清除该字段的错误
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -153,11 +132,11 @@ export default function PartEditPage() {
 
   // 处理项目选择变化
   function handleProjectChange(value: string) {
-    setPart(prev => ({ ...prev, project_id: Number(value) }));
+    setPart((prev) => ({ ...prev, project_id: Number(value) }));
 
     // 清除项目ID错误
     if (errors.project_id) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.project_id;
         return newErrors;
@@ -187,7 +166,7 @@ export default function PartEditPage() {
 
     // 如果是编辑模式，需要标记图片为已删除
     if (!isNewPart && part.image_url) {
-      setPart(prev => ({ ...prev, image_url: undefined }));
+      setPart((prev) => ({ ...prev, image_url: undefined }));
     }
   }
 
@@ -306,9 +285,7 @@ export default function PartEditPage() {
               <Package className="mr-2 text-blue-600" size={24} />
               {isNewPart ? '新增零件' : `编辑零件: ${part.part_number}`}
             </h1>
-            <p className="text-slate-500 mt-1">
-              {isNewPart ? '创建新的零件记录' : '修改现有零件信息'}
-            </p>
+            <p className="text-slate-500 mt-1">{isNewPart ? '创建新的零件记录' : '修改现有零件信息'}</p>
           </div>
 
           <div className="flex gap-3 mt-4 md:mt-0">
@@ -324,11 +301,7 @@ export default function PartEditPage() {
             >
               <ArrowLeft size={16} className="mr-1" /> 取消
             </Button>
-            <Button
-              onClick={handleSubmit}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={isSaving}
-            >
+            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
               {isSaving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -364,11 +337,7 @@ export default function PartEditPage() {
                   <div className="flex flex-col items-center">
                     {imagePreview ? (
                       <div className="w-full aspect-square rounded-md overflow-hidden bg-slate-100 flex items-center justify-center mb-4">
-                        <img
-                          src={imagePreview}
-                          alt="零件预览"
-                          className="w-full h-full object-contain"
-                        />
+                        <img src={imagePreview} alt="零件预览" className="w-full h-full object-contain" />
                       </div>
                     ) : (
                       <div className="w-full aspect-square rounded-md bg-slate-100 flex items-center justify-center mb-4">
@@ -428,10 +397,7 @@ export default function PartEditPage() {
                     <TabsContent value="basic" className="mt-0 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label
-                            htmlFor="project_id"
-                            className={errors.project_id ? 'text-red-500' : ''}
-                          >
+                          <Label htmlFor="project_id" className={errors.project_id ? 'text-red-500' : ''}>
                             所属项目 <span className="text-red-500">*</span>
                           </Label>
                           <Select
@@ -439,30 +405,22 @@ export default function PartEditPage() {
                             onValueChange={handleProjectChange}
                             disabled={!isNewPart}
                           >
-                            <SelectTrigger
-                              id="project_id"
-                              className={errors.project_id ? 'border-red-500' : ''}
-                            >
+                            <SelectTrigger id="project_id" className={errors.project_id ? 'border-red-500' : ''}>
                               <SelectValue placeholder="选择项目" />
                             </SelectTrigger>
                             <SelectContent>
-                              {projects.map(project => (
+                              {projects.map((project) => (
                                 <SelectItem key={project.id} value={String(project.id)}>
                                   {project.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          {errors.project_id && (
-                            <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>
-                          )}
+                          {errors.project_id && <p className="text-red-500 text-sm mt-1">{errors.project_id}</p>}
                         </div>
 
                         <div>
-                          <Label
-                            htmlFor="part_number"
-                            className={errors.part_number ? 'text-red-500' : ''}
-                          >
+                          <Label htmlFor="part_number" className={errors.part_number ? 'text-red-500' : ''}>
                             零件号 <span className="text-red-500">*</span>
                           </Label>
                           <Input
@@ -472,17 +430,12 @@ export default function PartEditPage() {
                             onChange={handleChange}
                             className={errors.part_number ? 'border-red-500' : ''}
                           />
-                          {errors.part_number && (
-                            <p className="text-red-500 text-sm mt-1">{errors.part_number}</p>
-                          )}
+                          {errors.part_number && <p className="text-red-500 text-sm mt-1">{errors.part_number}</p>}
                         </div>
                       </div>
 
                       <div>
-                        <Label
-                          htmlFor="part_name"
-                          className={errors.part_name ? 'text-red-500' : ''}
-                        >
+                        <Label htmlFor="part_name" className={errors.part_name ? 'text-red-500' : ''}>
                           零件名称 <span className="text-red-500">*</span>
                         </Label>
                         <Input
@@ -492,9 +445,7 @@ export default function PartEditPage() {
                           onChange={handleChange}
                           className={errors.part_name ? 'border-red-500' : ''}
                         />
-                        {errors.part_name && (
-                          <p className="text-red-500 text-sm mt-1">{errors.part_name}</p>
-                        )}
+                        {errors.part_name && <p className="text-red-500 text-sm mt-1">{errors.part_name}</p>}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -521,10 +472,7 @@ export default function PartEditPage() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <Label
-                            htmlFor="net_weight_kg"
-                            className={errors.net_weight_kg ? 'text-red-500' : ''}
-                          >
+                          <Label htmlFor="net_weight_kg" className={errors.net_weight_kg ? 'text-red-500' : ''}>
                             净重(kg)
                           </Label>
                           <Input
@@ -536,9 +484,7 @@ export default function PartEditPage() {
                             onChange={handleNumberChange}
                             className={errors.net_weight_kg ? 'border-red-500' : ''}
                           />
-                          {errors.net_weight_kg && (
-                            <p className="text-red-500 text-sm mt-1">{errors.net_weight_kg}</p>
-                          )}
+                          {errors.net_weight_kg && <p className="text-red-500 text-sm mt-1">{errors.net_weight_kg}</p>}
                         </div>
 
                         <div>
@@ -587,11 +533,7 @@ export default function PartEditPage() {
                   <p className="text-sm text-slate-500">
                     <span className="text-red-500">*</span> 表示必填字段
                   </p>
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    disabled={isSaving}
-                  >
+                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
                     {isSaving ? '保存中...' : '保存零件'}
                   </Button>
                 </CardFooter>

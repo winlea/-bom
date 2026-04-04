@@ -1,85 +1,86 @@
-import axiosInstance from './axiosInstance';
+/**
+ * Project Service - 项目相关 API 服务
+ */
+import { apiClient } from './client';
+import { PROJECTS, PROJECT_DETAIL, PROJECT_IMPORT, REPORT_GENERATE } from '@/constants/api';
 
-// 项目类型定义
 export interface Project {
   id: number;
   name: string;
   description?: string;
   status?: string;
+  supplier_name?: string;
+  customer_name?: string;
   created_at?: string;
-  parts_count?: number;
 }
 
-// 创建项目请求参数
-export interface CreateProjectRequest {
+export interface CreateProjectDto {
   name: string;
   description?: string;
+  supplier_name?: string;
+  customer_name?: string;
+  [key: string]: unknown;
 }
 
-// 项目服务类
-class ProjectService {
+export const projectService = {
   /**
    * 获取项目列表
-   * @param q 搜索关键词
-   * @returns 项目列表
    */
-  async getProjects(q?: string): Promise<Project[]> {
-    const params = q ? { q } : {};
-    const response = await axiosInstance.get('/projects', { params });
-    return response as unknown as Project[];
-  }
+  async list(params?: { q?: string; limit?: number }): Promise<{ items: Project[] }> {
+    const searchParams = new URLSearchParams();
+    if (params?.q) searchParams.set('q', params.q);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+
+    const query = searchParams.toString();
+    return apiClient.get(`${PROJECTS}${query ? `?${query}` : ''}`);
+  },
 
   /**
    * 获取单个项目
-   * @param projectId 项目ID
-   * @returns 项目详情
    */
-  async getProject(projectId: number): Promise<Project> {
-    const response = await axiosInstance.get(`/projects/${projectId}`);
-    return response.data || response;
-  }
+  async get(id: number): Promise<Project> {
+    return apiClient.get(PROJECT_DETAIL(id));
+  },
 
   /**
    * 创建项目
-   * @param data 项目数据
-   * @returns 创建的项目
    */
-  async createProject(data: CreateProjectRequest): Promise<Project> {
-    const response = await axiosInstance.post('/projects', data);
-    return response.data || response;
-  }
+  async create(data: CreateProjectDto): Promise<Project> {
+    return apiClient.post(PROJECTS, data);
+  },
 
   /**
    * 更新项目
-   * @param projectId 项目ID
-   * @param data 项目数据
-   * @returns 更新后的项目
    */
-  async updateProject(projectId: number, data: Partial<CreateProjectRequest>): Promise<Project> {
-    const response = await axiosInstance.put(`/projects/${projectId}`, data);
-    return response.data || response;
-  }
+  async update(id: number, data: Partial<CreateProjectDto>): Promise<Project> {
+    return apiClient.put(PROJECT_DETAIL(id), data);
+  },
 
   /**
    * 删除项目
-   * @param projectId 项目ID
-   * @returns 是否删除成功
    */
-  async deleteProject(projectId: number): Promise<boolean> {
-    await axiosInstance.delete(`/projects/${projectId}`);
-    return true;
-  }
+  async delete(id: number): Promise<void> {
+    return apiClient.delete(PROJECT_DETAIL(id));
+  },
 
   /**
-   * 获取项目的零件
-   * @param projectId 项目ID
-   * @returns 零件列表
+   * 导入 BOM
    */
-  async getProjectParts(projectId: number): Promise<any[]> {
-    const response = await axiosInstance.get(`/parts?project_id=${projectId}`);
-    return response as unknown as any[];
-  }
-}
+  async importBom(
+    projectId: number,
+    file: File
+  ): Promise<{
+    created: number;
+    updated: number;
+    errors: string[];
+  }> {
+    return apiClient.uploadFile(PROJECT_IMPORT, file, { project_id: String(projectId) });
+  },
 
-// 导出项目服务实例
-export default new ProjectService();
+  /**
+   * 生成报表
+   */
+  async generateReport(projectId: number): Promise<Blob> {
+    return apiClient.post(REPORT_GENERATE, { project_id: projectId });
+  },
+};

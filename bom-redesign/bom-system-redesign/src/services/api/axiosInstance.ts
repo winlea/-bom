@@ -36,11 +36,11 @@ axiosInstance.interceptors.response.use(
       // 服务器返回错误
       const status = error.response.status;
       const data = error.response.data as any;
-      
+
       // 提取详细错误信息
       const errorMessage = data?.message || data?.error || 'An error occurred';
       const errorDetails = data?.details || data?.errors || null;
-      
+
       // 构建完整错误对象
       const errorObj = {
         ...error,
@@ -49,26 +49,26 @@ axiosInstance.interceptors.response.use(
           data: {
             ...data,
             message: errorMessage,
-            details: errorDetails
-          }
+            details: errorDetails,
+          },
         },
         errorMessage,
-        errorDetails
+        errorDetails,
       };
-      
+
       console.error('API Error:', {
         status,
         message: errorMessage,
-        details: errorDetails
+        details: errorDetails,
       });
-      
+
       return Promise.reject(errorObj);
     } else if (error.request) {
       // 请求已发送但没有收到响应
       const networkError = {
         ...error,
         errorMessage: 'Network Error',
-        errorDetails: 'No response received from server'
+        errorDetails: 'No response received from server',
       };
       console.error('Network Error:', 'No response received from server');
       return Promise.reject(networkError);
@@ -77,7 +77,7 @@ axiosInstance.interceptors.response.use(
       const requestError = {
         ...error,
         errorMessage: 'Request Error',
-        errorDetails: error.message
+        errorDetails: error.message,
       };
       console.error('Request Error:', error.message);
       return Promise.reject(requestError);

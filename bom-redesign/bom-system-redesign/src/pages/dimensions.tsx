@@ -3,69 +3,71 @@ import Layout, { Breadcrumb } from '../components/layout';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Plus, Check, X, Search, FileText, Ruler, Edit, Image, Grid, Download } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { DimensionImageGenerator, DimensionForm, DimensionPreviewModal } from '@/components/dimensions';
+import { DimensionImageCombiner, DimensionDrawingCanvas } from '@/components/dimension-tools';
+import DimensionImageRecognizer from '@/components/dimension-tools/dimension-image-recognizer';
+
+// 导入类型和服务
+import type { DimRow, DimensionGroup, NewRowData } from '@/types/dimension';
+import { isValidNumber as validateNumber, isGeometricType } from '@/utils/dimension-validators';
+
+// 导入 React Query hooks 和 Toast
+import { useToast } from '@/providers';
 import {
-  DimensionImageGenerator,
-  DimensionPreviewModal,
-} from '../components/dimension-image-generator';
-import DimensionImageCombiner from '../components/dimension-image-combiner';
-import DimensionImageRecognizer from '../components/dimension-image-recognizer';
-import DimensionDrawingCanvas from '../components/dimension-drawing-canvas';
-
-interface DimRow {
-  id: number;
-  groupNo: number;
-  dimensionType: string;
-  nominalValue: string;
-  toleranceValue: string;
-  upperTolerance: string;
-  lowerTolerance: string;
-  unit?: string;
-  datum: string;
-  characteristic: string;
-  notes: string;
-  imageUrl?: string; // 图片尺寸的图片URL
-}
-
-interface DimensionGroup {
-  groupNumber: number;
-  rows: DimRow[];
-}
-
-interface NewRowData {
-  groupNumber: number;
-  dimensionType: string;
-  nominalValue: string;
-  toleranceValue: string;
-  upperTolerance: string;
-  lowerTolerance: string;
-  unit?: string;
-  datum: string;
-  characteristic: string;
-  notes: string;
-  imageUrl?: string; // 图片尺寸的图片URL
-}
+  useDimensions,
+  useCreateDimension,
+  useUpdateDimension,
+  useDeleteDimension,
+  dimensionKeys,
+} from '@/hooks/use-dimensions';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Dimensions() {
+  // Toast 通知
+  const toast = useToast();
+
+  // React Query Client
+  const queryClient = useQueryClient();
+
+  // React Query: 尺寸数据
   const [selectedProject, setSelectedProject] = useState('1');
   const location = useLocation();
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState<string>('');
   const [partNumber, setPartNumber] = useState<string>('Y1392191');
   const [projects, setProjects] = useState<Array<{ id: number; name?: string }>>([]);
-  const [parts, setParts] = useState<
-    Array<{ id: number; part_number?: string; part_name?: string }>
-  >([]);
+  const [parts, setParts] = useState<Array<{ id: number; part_number?: string; part_name?: string }>>([]);
+
+  // React Query hooks
+  const { data: dimensionData = [], isLoading } = useDimensions(selectedProject, partNumber);
+  const createMutation = useCreateDimension({
+    onSuccess: () => {
+      toast.success('保存成功', '尺寸已保存');
+      // 刷新查询以确保数据同步
+      queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
+    },
+    onError: (error) => toast.error('保存失败', error.message),
+  });
+  const updateMutation = useUpdateDimension({
+    onSuccess: () => {
+      toast.success('更新成功', '尺寸已更新');
+      // 刷新查询以确保数据同步
+      queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
+    },
+    onError: (error) => toast.error('更新失败', error.message),
+  });
+  const deleteMutation = useDeleteDimension({
+    onSuccess: () => {
+      toast.success('删除成功', '尺寸已删除');
+    },
+    onError: (error) => toast.error('删除失败', error.message),
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [addingToGroup, setAddingToGroup] = useState<number | null>(null);
@@ -89,14 +91,20 @@ export default function Dimensions() {
     notes: '',
   });
 
-  const [dimensionData, setDimensionData] = useState<DimRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  // DimensionForm 的 onChange 回调包装函数
+  const handleNewRowChange = (row: DimRow | NewRowData) => {
+    if ('groupNumber' in row) {
+      setNewRow(row as NewRowData);
+    }
+  };
+
   const [editingRow, setEditingRow] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
   const [showImageCombiner, setShowImageCombiner] = useState(false);
   const [selectedDimensions, setSelectedDimensions] = useState<number[]>([]);
   const [editData, setEditData] = useState<DimRow | null>(null);
   const [combinedImageUrl, setCombinedImageUrl] = useState<string>('');
-  const [groupCombinedImages, setGroupCombinedImages] = useState<{[key: number]: string}>({});
+  const [groupCombinedImages, setGroupCombinedImages] = useState<{ [key: number]: string }>({});
   const [imageModal, setImageModal] = useState<{
     isOpen: boolean;
     insertPosition: number;
@@ -114,12 +122,12 @@ export default function Dimensions() {
     title: string;
   }>({ isOpen: false, imageUrl: '', title: '' });
   const [savingCanvasImages, setSavingCanvasImages] = useState(false);
-  
+
   // 尺寸绘制功能状态
   const [dimensionDrawingModal, setDimensionDrawingModal] = useState<{
     isOpen: boolean;
   }>({ isOpen: false });
-  
+
   const [drawingDimensions, setDrawingDimensions] = useState<DimRow[]>([
     {
       id: 1,
@@ -158,7 +166,7 @@ export default function Dimensions() {
       notes: '',
     },
   ]);
-  
+
   const [drawingConfig] = useState({
     canvasWidth: 800,
     canvasHeight: 600,
@@ -166,13 +174,13 @@ export default function Dimensions() {
     spacing: 10,
     backgroundColor: '#ffffff',
   });
-  
+
   const [drawingImageData, setDrawingImageData] = useState<string>('');
 
   // 批量保存Canvas图片到数据库
   const saveAllCanvasImages = async () => {
     if (!dimensionData.length) {
-      alert('没有尺寸数据需要保存');
+      toast.warning('没有尺寸数据', '没有尺寸数据需要保存');
       return;
     }
 
@@ -186,7 +194,7 @@ export default function Dimensions() {
     try {
       // 收集所有尺寸的Canvas数据
       const canvasDataList = [];
-      
+
       for (const dim of dimensionData) {
         // 跳过图片尺寸类型
         if (dim.dimensionType === 'image_dimension' || dim.dimensionType === 'image') {
@@ -198,22 +206,22 @@ export default function Dimensions() {
         canvas.width = 120;
         canvas.height = 60;
         const ctx = canvas.getContext('2d');
-        
+
         if (ctx) {
           // 设置背景
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
+
           // 绘制尺寸内容（简化版本）
           ctx.fillStyle = '#1f2937';
           ctx.font = '12px Arial';
           ctx.textAlign = 'center';
-          
+
           const symbol = getDimensionSymbol(dim.dimensionType);
           const nominal = dim.nominalValue || '0';
           const upper = dim.upperTolerance;
           const lower = dim.lowerTolerance;
-          
+
           let displayText = '';
           if (dim.dimensionType === 'diameter') {
             if (upper && lower && upper === Math.abs(parseFloat(lower)).toString()) {
@@ -232,28 +240,28 @@ export default function Dimensions() {
               displayText = nominal;
             }
           }
-          
+
           ctx.fillText(displayText, canvas.width / 2, canvas.height / 2 + 4);
-          
+
           // 转换为base64
           const canvasData = canvas.toDataURL('image/png');
           canvasDataList.push({
             dimensionId: dim.id,
-            canvasData: canvasData
+            canvasData: canvasData,
           });
         }
       }
 
       if (canvasDataList.length === 0) {
-        alert('没有可保存的Canvas图片（图片尺寸类型会被跳过）');
+        toast.warning('无可保存图片', '没有可保存的Canvas图片（图片尺寸类型会被跳过）');
         return;
       }
 
       // 调用后端API批量保存
-      const canvasImages = canvasDataList.map(item => ({
+      const canvasImages = canvasDataList.map((item) => ({
         dimensionId: item.dimensionId,
         canvasDataUrl: item.canvasData,
-        imageType: 'canvas'
+        imageType: 'canvas',
       }));
 
       const response = await fetch('/api/dimensions/images/batch-save-canvas', {
@@ -262,26 +270,26 @@ export default function Dimensions() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          canvasImages: canvasImages
+          canvasImages: canvasImages,
         }),
       });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          alert(`✅ 批量保存成功！\n\n成功保存: ${result.data.successCount} 个\n失败: ${result.data.errorCount} 个\n\n现在可以在ODS文件中使用这些图片了！`);
-          
-          // 重新获取数据以更新界面
-          await fetchDimensions();
+          toast.success('批量保存成功', `成功保存: ${result.data.successCount} 个，失败: ${result.data.errorCount} 个`);
+
+          // 刷新查询以确保数据同步
+          queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
         } else {
-          alert(`保存失败: ${result.message}`);
+          toast.error('保存失败', result.message);
         }
       } else {
-        alert('保存失败，请检查网络连接');
+        toast.error('保存失败', '请检查网络连接');
       }
     } catch (error) {
       console.error('批量保存Canvas图片失败:', error);
-      alert('保存失败，请检查网络连接');
+      toast.error('保存失败', '请检查网络连接');
     } finally {
       setSavingCanvasImages(false);
     }
@@ -343,9 +351,7 @@ export default function Dimensions() {
         });
       if (!current || !exists) {
         const first: any = items[0] || {};
-        const pn = String(
-          first.part_number ?? first.产品编号 ?? first.part_name ?? first.零件名称 ?? ''
-        );
+        const pn = String(first.part_number ?? first.产品编号 ?? first.part_name ?? first.零件名称 ?? '');
         console.log('设置默认零件编号:', pn);
         if (pn) setPartNumber(pn);
       }
@@ -355,55 +361,12 @@ export default function Dimensions() {
     }
   };
 
-  // 从后端获取尺寸数据
-  const fetchDimensions = async (retryCount = 0) => {
-    setLoading(true);
-    try {
-      // 从后端API获取实际数据
-      console.log('🔧 从后端获取尺寸数据');
-      console.log(`项目ID: ${selectedProject}, 零件号: ${partNumber}`);
-      
-      const response = await fetch(`/api/dimensions/projects/${selectedProject}?part_number=${encodeURIComponent(partNumber)}`);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('获取到的尺寸数据:', result);
-        
-        if (result.success && Array.isArray(result.data)) {
-          setDimensionData(result.data);
-          
-          // 为获取的数据生成组合图片
-          setTimeout(() => {
-            // 获取所有唯一的组号
-            const groups = [...new Set(result.data.map((dim: DimRow) => dim.groupNo))].map(Number);
-            groups.forEach((groupNo) => {
-              generateCombinedImageForGroup(groupNo);
-            });
-          }, 500);
-        } else {
-          console.log('没有获取到尺寸数据，使用空数组');
-          setDimensionData([]);
-        }
-      } else {
-        console.error('获取尺寸数据失败:', response.status);
-        setDimensionData([]);
-      }
-    } catch (error) {
-      console.error('获取尺寸数据时发生错误:', error);
-      setDimensionData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 页面加载时获取数据
   useEffect(() => {
     fetchParts(selectedProject);
   }, [selectedProject]);
 
-  useEffect(() => {
-    fetchDimensions();
-  }, [selectedProject, partNumber]);
+  // useDimensions hook 自动处理尺寸数据的获取和缓存
 
   // 键盘事件处理 - ESC键关闭图片预览
   useEffect(() => {
@@ -425,7 +388,7 @@ export default function Dimensions() {
   const dimensionGroups: DimensionGroup[] = React.useMemo(() => {
     const groups: { [key: number]: DimRow[] } = {};
 
-    dimensionData.forEach(row => {
+    dimensionData.forEach((row) => {
       if (!groups[row.groupNo]) {
         groups[row.groupNo] = [];
       }
@@ -433,7 +396,7 @@ export default function Dimensions() {
     });
 
     return Object.keys(groups)
-      .map(groupNo => ({
+      .map((groupNo) => ({
         groupNumber: parseInt(groupNo),
         rows: groups[parseInt(groupNo)],
       }))
@@ -442,7 +405,7 @@ export default function Dimensions() {
 
   // 添加新尺寸（创建新编号组）
   const addNewDimension = () => {
-    const newGroupNumber = Math.max(...dimensionGroups.map(g => g.groupNumber), 0) + 1;
+    const newGroupNumber = Math.max(...dimensionGroups.map((g) => g.groupNumber), 0) + 1;
     setNewRow({
       groupNumber: newGroupNumber,
       dimensionType: 'normal',
@@ -475,158 +438,95 @@ export default function Dimensions() {
     setIsAddingRow(true);
   };
 
-  // 验证数字格式的辅助函数
-  const isValidNumber = (value: string): boolean => {
-    if (!value.trim()) return false;
-
-    // 检查是否为有效的数字格式
-    const num = parseFloat(value);
-    if (isNaN(num)) return false;
-
-    // 检查字符串是否为完整的数字（不能以小数点结尾）
-    const trimmed = value.trim();
-    if (trimmed.endsWith('.') || trimmed.startsWith('.') || trimmed === '-' || trimmed === '+') {
-      return false;
-    }
-
-    // 检查是否包含多个小数点
-    const dotCount = (trimmed.match(/\./g) || []).length;
-    if (dotCount > 1) return false;
-
-    // 检查是否为纯数字格式（允许负号和一个小数点）
-    const validPattern = /^-?\d+(\.\d+)?$/;
-    return validPattern.test(trimmed);
-  };
+  // 验证数字格式 - 使用统一的验证器
+  const isValidNumber = validateNumber;
 
   const saveNewRow = async () => {
     // 验证名义值
     if (!newRow.nominalValue.trim()) {
-      alert('请输入名义值');
+      toast.warning('请输入名义值');
       return;
     }
 
     // 验证名义值是否为完整的有效数字
     if (!isValidNumber(newRow.nominalValue)) {
-      alert('名义值必须是完整的有效数字（如：12、0.5、-1.2）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('名义值必须是完整的有效数字（如：12、0.5、-1.2）');
       return;
     }
 
     // 验证上公差（如果有输入）
     if (newRow.upperTolerance.trim() && !isValidNumber(newRow.upperTolerance)) {
-      alert('上公差必须是完整的有效数字（如：0.1、-0.5）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('上公差必须是完整的有效数字');
       return;
     }
 
     // 验证下公差（如果有输入）
     if (newRow.lowerTolerance.trim() && !isValidNumber(newRow.lowerTolerance)) {
-      alert('下公差必须是完整的有效数字（如：-0.5、0.1）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('下公差必须是完整的有效数字');
       return;
     }
 
     // 验证公差值（如果有输入）
     if (newRow.toleranceValue.trim() && !isValidNumber(newRow.toleranceValue)) {
-      alert('公差值必须是完整的有效数字（如：0.5、1.0）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('公差值必须是完整的有效数字');
       return;
     }
 
     // 几何公差类型需要公差值
     if (['position', 'profile_surface', 'flatness', 'coplanarity'].includes(newRow.dimensionType)) {
       if (!newRow.toleranceValue.trim()) {
-        alert('几何公差类型必须输入公差值');
+        toast.warning('几何公差类型必须输入公差值');
         return;
       }
     }
 
     // 位置度特殊验证（符合ISO 1101/ASME Y14.5标准）
     if (newRow.dimensionType === 'position') {
-      // 位置度必须有基准
       if (!newRow.datum || !newRow.datum.trim()) {
-        alert('位置度必须指定基准（符合ISO 1101/ASME Y14.5标准）');
+        toast.warning('位置度必须指定基准');
         return;
       }
     }
 
     // 验证基准符号格式
-      if (newRow.datum) {
-        const datum = newRow.datum.trim();
-        // 基准符号可以是单个基准或基准体系（符合ISO 1101/ASME Y14.5和GB/T 1182标准）
-        // 支持格式：A, B1, ABC, A-B-C, A1-B2-C3等
-        const datumRegex = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
-        if (!datumRegex.test(datum)) {
-          alert('基准符号格式无效。支持单个基准（如 A, B1）、连续基准（如 ABC）或基准体系（如 A-B-C, A1-B2-C3）（符合ISO 1101/ASME Y14.5和GB/T 1182标准）');
-          return;
-        }
-      }
-
-    // 验证尺寸组合的合理性（符合工程实际）
-    if (newRow.dimensionType === 'diameter') {
-      // 检查当前组是否已有孔径尺寸
-      const existingDiameterInGroup = dimensionData.some(dim => 
-        dim.groupNo === newRow.groupNumber && dim.dimensionType === 'diameter'
-      );
-      if (existingDiameterInGroup) {
-        alert('一个尺寸组合中只能有一个孔径大小（diameter）');
+    if (newRow.datum) {
+      const datum = newRow.datum.trim();
+      const datumRegex = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
+      if (!datumRegex.test(datum)) {
+        toast.warning('基准符号格式无效');
         return;
       }
     }
 
-
-
-    setLoading(true);
-    try {
-      // 调用后端API保存数据
-      const response = await fetch(
-        `/api/dimensions/projects/${selectedProject}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            partId: partNumber, // 传递当前选中的产品编号
-            groupNo: newRow.groupNumber,
-            dimensionType: newRow.dimensionType,
-            nominalValue: newRow.nominalValue,
-            toleranceValue: newRow.toleranceValue,
-            upperTolerance: newRow.upperTolerance,
-            lowerTolerance: newRow.lowerTolerance,
-            unit: newRow.unit,
-            datum: newRow.datum,
-            characteristic: newRow.characteristic,
-            notes: newRow.notes,
-          }),
-        }
+    // 验证尺寸组合的合理性（符合工程实际）
+    if (newRow.dimensionType === 'diameter') {
+      const existingDiameterInGroup = dimensionData.some(
+        (dim) => dim.groupNo === newRow.groupNumber && dim.dimensionType === 'diameter'
       );
+      if (existingDiameterInGroup) {
+        toast.warning('一个尺寸组合中只能有一个孔径大小');
+        return;
+      }
+    }
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          // 保存成功后重新获取数据
-          await fetchDimensions();
+    // 使用 React Query mutation（乐观更新）
+    const groupNo = newRow.groupNumber;
+    createMutation.mutate(
+      {
+        projectId: selectedProject,
+        partNumber,
+        data: newRow,
+      },
+      {
+        onSuccess: () => {
           cancelNewRow();
           // 为新创建的组生成组合图片
           setTimeout(() => {
-            generateCombinedImageForGroup(newRow.groupNumber);
+            generateCombinedImageForGroup(groupNo);
           }, 500);
-          alert('尺寸保存成功！组合图片已自动生成');
-        } else {
-          alert(`保存失败: ${result.message}`);
-        }
-      } else {
-        // 尝试获取错误响应
-        try {
-          const errorData = await response.json();
-          alert(`保存失败: ${errorData.message || '未知错误'}`);
-        } catch (e) {
-          alert('保存失败，请检查网络连接');
-        }
+        },
       }
-    } catch (error) {
-      console.error('保存尺寸失败:', error);
-      alert('保存失败，请检查网络连接并重试');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const cancelNewRow = () => {
@@ -650,54 +550,21 @@ export default function Dimensions() {
       return;
     }
 
-    console.log('开始删除尺寸，ID:', id);
-    setLoading(true);
-    try {
-      // 使用删除重排序API
-      const url = `/api/dimensions/${id}/delete-with-reorder`;
-      console.log('删除尺寸的URL:', url);
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-      });
-
-      console.log('删除尺寸的响应状态码:', response.status);
-      console.log('删除尺寸的响应状态:', response.statusText);
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('删除尺寸的响应数据:', result);
-        
-        if (result.success) {
-          // 删除成功后重新获取数据
-          await fetchDimensions();
+    // 使用 React Query mutation（乐观更新）
+    const context = { projectId: selectedProject, partNumber };
+    deleteMutation.mutate(
+      { id, context },
+      {
+        onSuccess: () => {
           // 重新生成所有组的组合图片
           setTimeout(() => {
-            dimensionGroups.forEach(group => {
+            dimensionGroups.forEach((group) => {
               generateCombinedImageForGroup(group.groupNumber);
             });
           }, 500);
-          alert('尺寸删除成功，编号已重新排序！组合图片已自动更新');
-        } else {
-          alert(`删除失败: ${result.message}`);
-        }
-      } else {
-        // 尝试获取错误响应的内容
-        try {
-          const errorData = await response.json();
-          console.log('删除尺寸的错误响应:', errorData);
-          alert(`删除失败: ${errorData.message || '网络错误'}`);
-        } catch (e) {
-          console.error('无法解析错误响应:', e);
-          alert('删除失败，请检查网络连接');
-        }
+        },
       }
-    } catch (error) {
-      console.error('删除尺寸失败:', error);
-      alert('删除失败，请检查网络连接');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   // 开始编辑行
@@ -705,8 +572,6 @@ export default function Dimensions() {
     setEditingRow(row.id);
     setEditData({ ...row });
   };
-
-
 
   // 取消编辑
   const cancelEdit = () => {
@@ -717,7 +582,7 @@ export default function Dimensions() {
   // 构建公差文本
   const buildToleranceText = (upper: string, lower: string): string => {
     if (!upper && !lower) return '';
-    
+
     const up = parseFloat(upper || '0');
     const lo = parseFloat(lower || '0');
 
@@ -736,36 +601,21 @@ export default function Dimensions() {
     return '';
   };
 
-  // 检查是否为几何公差类型
-  const isGeometric = (type: string) =>
-    type === 'position' ||
-    type === 'profile_surface' ||
-    type === 'flatness' ||
-    type === 'coplanarity' ||
-    type === 'straightness' ||
-    type === 'roundness' ||
-    type === 'cylindricity' ||
-    type === 'profile_line' ||
-    type === 'parallelism' ||
-    type === 'perpendicularity' ||
-    type === 'angularity' ||
-    type === 'concentricity' ||
-    type === 'symmetry' ||
-    type === 'circular_runout' ||
-    type === 'total_runout';
+  // 检查是否为几何公差类型 - 使用统一的验证器
+  const isGeometric = isGeometricType;
 
   // 为指定组生成组合图片
   const generateCombinedImageForGroup = (groupNumber: number) => {
     // 获取该组的所有尺寸
-    const groupDimensions = dimensionData.filter(dim => dim.groupNo === groupNumber);
-    
+    const groupDimensions = dimensionData.filter((dim) => dim.groupNo === groupNumber);
+
     if (groupDimensions.length === 0) return;
-    
+
     // 创建临时Canvas
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     // 计算画布尺寸 - 根据尺寸数量和类型动态调整
     const padding = 20;
     const sectionHeight = 40; // 每个尺寸部分的高度
@@ -774,26 +624,30 @@ export default function Dimensions() {
     const canvasHeight = padding * 2 + sectionHeight * groupDimensions.length;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-    
+
     // 绘制背景
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
+
     // 初始化位置
     let currentSection = 0;
     const x = padding;
-    
+
     // 遍历所有尺寸并绘制
     groupDimensions.forEach((dimension, index) => {
       const y = padding + currentSection * sectionHeight + sectionHeight / 2;
-      
+
       if (dimension.dimensionType === 'diameter') {
         // 绘制孔径尺寸
         let mainText = `⌀${dimension.nominalValue || '0'}`;
         if (dimension.upperTolerance && dimension.lowerTolerance) {
           const upper = dimension.upperTolerance;
           const lower = dimension.lowerTolerance;
-          if (Math.abs(parseFloat(upper)) === Math.abs(parseFloat(lower)) && parseFloat(upper) > 0 && parseFloat(lower) < 0) {
+          if (
+            Math.abs(parseFloat(upper)) === Math.abs(parseFloat(lower)) &&
+            parseFloat(upper) > 0 &&
+            parseFloat(lower) < 0
+          ) {
             mainText += ` ±${upper}`;
           } else {
             mainText += ` ${upper}/${lower}`;
@@ -803,28 +657,27 @@ export default function Dimensions() {
         } else if (dimension.lowerTolerance) {
           mainText += ` ${dimension.lowerTolerance}`;
         }
-        
+
         ctx.fillStyle = '#000000';
         ctx.font = '20px Arial';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(mainText, x, y);
-        
       } else if (isGeometric(dimension.dimensionType)) {
         // 绘制几何公差（位置度等）
         const boxHeight = 30;
         const symbolBoxWidth = 35;
         const toleranceBoxWidth = 50;
         const datumBoxWidth = 30;
-        
+
         // 处理基准，按照ISO 1101/ASME Y14.5和GB/T 1182标准显示
         // 支持格式：A, B1, A-B-C, A1-B2-C3等
         const datumStr = dimension.datum ? dimension.datum.trim() : '';
         // 分割基准，保留原始格式（包括数字和连字符）
-        const datums = datumStr.split('-').filter(d => d.trim());
-        
+        const datums = datumStr.split('-').filter((d) => d.trim());
+
         let startX = x;
-        
+
         // 绘制符号框
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
@@ -835,13 +688,13 @@ export default function Dimensions() {
         ctx.textBaseline = 'middle';
         ctx.fillText(getDimensionSymbol(dimension.dimensionType), startX + symbolBoxWidth / 2, y);
         startX += symbolBoxWidth;
-        
+
         // 绘制公差框
         ctx.strokeRect(startX, y - boxHeight / 2, toleranceBoxWidth, boxHeight);
         ctx.font = '16px Arial';
         ctx.fillText(dimension.toleranceValue || '0', startX + toleranceBoxWidth / 2, y);
         startX += toleranceBoxWidth;
-        
+
         // 绘制基准框
         if (datums.length > 0) {
           ctx.font = '16px Arial';
@@ -855,14 +708,17 @@ export default function Dimensions() {
             startX += adjustedDatumBoxWidth;
           });
         }
-        
       } else {
         // 绘制普通尺寸
         let mainText = dimension.nominalValue || '0';
         if (dimension.upperTolerance && dimension.lowerTolerance) {
           const upper = dimension.upperTolerance;
           const lower = dimension.lowerTolerance;
-          if (Math.abs(parseFloat(upper)) === Math.abs(parseFloat(lower)) && parseFloat(upper) > 0 && parseFloat(lower) < 0) {
+          if (
+            Math.abs(parseFloat(upper)) === Math.abs(parseFloat(lower)) &&
+            parseFloat(upper) > 0 &&
+            parseFloat(lower) < 0
+          ) {
             mainText += ` ±${upper}`;
           } else {
             mainText += ` ${upper}/${lower}`;
@@ -872,27 +728,25 @@ export default function Dimensions() {
         } else if (dimension.lowerTolerance) {
           mainText += ` ${dimension.lowerTolerance}`;
         }
-        
+
         ctx.fillStyle = '#000000';
         ctx.font = '20px Arial';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(mainText, x, y);
       }
-      
+
       currentSection++;
     });
-    
+
     // 生成图片URL
     const imageUrl = canvas.toDataURL('image/png');
-    setGroupCombinedImages(prev => ({
+    setGroupCombinedImages((prev) => ({
       ...prev,
-      [groupNumber]: imageUrl
+      [groupNumber]: imageUrl,
     }));
     setCombinedImageUrl(imageUrl);
   };
-
-
 
   // 保存编辑
   const saveEdit = async () => {
@@ -900,40 +754,38 @@ export default function Dimensions() {
 
     // 验证名义值
     if (!editData.nominalValue.trim()) {
-      alert('请输入名义值');
+      toast.warning('请输入名义值');
       return;
     }
 
     // 验证名义值是否为完整的有效数字
     if (!isValidNumber(editData.nominalValue)) {
-      alert('名义值必须是完整的有效数字（如：12、0.5、-1.2）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('名义值格式错误', '名义值必须是完整的有效数字（如：12、0.5、-1.2）');
       return;
     }
 
     // 验证上公差（如果有输入）
     if (editData.upperTolerance.trim() && !isValidNumber(editData.upperTolerance)) {
-      alert('上公差必须是完整的有效数字（如：0.1、-0.5）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('上公差格式错误', '上公差必须是完整的有效数字');
       return;
     }
 
     // 验证下公差（如果有输入）
     if (editData.lowerTolerance.trim() && !isValidNumber(editData.lowerTolerance)) {
-      alert('下公差必须是完整的有效数字（如：-0.5、0.1）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('下公差格式错误', '下公差必须是完整的有效数字');
       return;
     }
 
     // 验证公差值（如果有输入）
     if (editData.toleranceValue.trim() && !isValidNumber(editData.toleranceValue)) {
-      alert('公差值必须是完整的有效数字（如：0.5、1.0）\n不能是：0.、.5、-、+等不完整格式');
+      toast.warning('公差值格式错误', '公差值必须是完整的有效数字');
       return;
     }
 
     // 几何公差类型需要公差值
-    if (
-      ['position', 'profile_surface', 'flatness', 'coplanarity'].includes(editData.dimensionType)
-    ) {
+    if (['position', 'profile_surface', 'flatness', 'coplanarity'].includes(editData.dimensionType)) {
       if (!editData.toleranceValue.trim()) {
-        alert('几何公差类型必须输入公差值');
+        toast.warning('请输入公差值', '几何公差类型必须输入公差值');
         return;
       }
     }
@@ -942,7 +794,7 @@ export default function Dimensions() {
     if (editData.dimensionType === 'position') {
       // 位置度必须有基准
       if (!editData.datum || !editData.datum.trim()) {
-        alert('位置度必须指定基准（符合ISO 1101/ASME Y14.5标准）');
+        toast.warning('请指定基准', '位置度必须指定基准');
         return;
       }
     }
@@ -954,7 +806,7 @@ export default function Dimensions() {
       // 支持格式：A, B1, ABC, A-B-C, A1-B2-C3等
       const datumRegex = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
       if (!datumRegex.test(datum)) {
-        alert('基准符号格式无效。支持单个基准（如 A, B1）、连续基准（如 ABC）或基准体系（如 A-B-C, A1-B2-C3）（符合ISO 1101/ASME Y14.5和GB/T 1182标准）');
+        toast.warning('基准符号格式无效');
         return;
       }
     }
@@ -962,18 +814,14 @@ export default function Dimensions() {
     // 验证尺寸组合的合理性（符合工程实际）
     if (editData.dimensionType === 'diameter') {
       // 检查当前组是否已有其他孔径尺寸（排除当前正在编辑的尺寸）
-      const existingDiameterInGroup = dimensionData.some(dim => 
-        dim.groupNo === editData.groupNo && 
-        dim.dimensionType === 'diameter' && 
-        dim.id !== editData.id
+      const existingDiameterInGroup = dimensionData.some(
+        (dim) => dim.groupNo === editData.groupNo && dim.dimensionType === 'diameter' && dim.id !== editData.id
       );
       if (existingDiameterInGroup) {
-        alert('一个尺寸组合中只能有一个孔径大小（diameter）');
+        toast.warning('孔径尺寸重复', '一个尺寸组合中只能有一个孔径大小');
         return;
       }
     }
-
-
 
     setLoading(true);
     try {
@@ -984,38 +832,38 @@ export default function Dimensions() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            dimensionType: editData.dimensionType,
-            nominalValue: editData.nominalValue,
-            toleranceValue: editData.toleranceValue,
-            upperTolerance: editData.upperTolerance,
-            lowerTolerance: editData.lowerTolerance,
-            unit: editData.unit,
-            datum: editData.datum,
-            characteristic: editData.characteristic,
-            notes: editData.notes,
-          }),
+          dimensionType: editData.dimensionType,
+          nominalValue: editData.nominalValue,
+          toleranceValue: editData.toleranceValue,
+          upperTolerance: editData.upperTolerance,
+          lowerTolerance: editData.lowerTolerance,
+          unit: editData.unit,
+          datum: editData.datum,
+          characteristic: editData.characteristic,
+          notes: editData.notes,
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // 保存成功后重新获取数据
-          await fetchDimensions();
+          // 刷新查询以确保数据同步
+          queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
           // 为当前组重新生成组合图片
           setTimeout(() => {
             generateCombinedImageForGroup(editData!.groupNo);
           }, 500);
           cancelEdit();
-          alert('尺寸更新成功！组合图片已自动生成');
+          toast.success('更新成功', '尺寸已更新');
         } else {
-          alert(`更新失败: ${result.message}`);
+          toast.error('更新失败', result.message);
         }
       } else {
-        alert('更新失败，请检查网络连接');
+        toast.error('更新失败', '请检查网络连接');
       }
     } catch (error) {
       console.error('更新尺寸失败:', error);
-      alert('更新失败，请检查网络连接');
+      toast.error('更新失败', '请检查网络连接');
     } finally {
       setLoading(false);
     }
@@ -1025,39 +873,36 @@ export default function Dimensions() {
   const insertDimensionAtPosition = async (insertPosition: number, dimensionData: any) => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `/api/dimensions/projects/${selectedProject}/insert`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            partId: partNumber, // 传递当前选中的产品编号
-            insertPosition: insertPosition,
-            ...dimensionData,
-          }),
-        }
-      );
+      const response = await fetch(`/api/dimensions/projects/${selectedProject}/insert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partId: partNumber, // 传递当前选中的产品编号
+          insertPosition: insertPosition,
+          ...dimensionData,
+        }),
+      });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // 插入成功后重新获取数据
-          await fetchDimensions();
-          alert(`尺寸已插入到位置 ${insertPosition}，后续编号已自动顺延！`);
+          // 刷新查询以确保数据同步
+          queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
+          toast.success('插入成功', `尺寸已插入到位置 ${insertPosition}`);
           return true;
         } else {
-          alert(`插入失败: ${result.message}`);
+          toast.error('插入失败', result.message);
           return false;
         }
       } else {
-        alert('插入失败，请检查网络连接');
+        toast.error('插入失败', '请检查网络连接');
         return false;
       }
     } catch (error) {
       console.error('插入尺寸失败:', error);
-      alert('插入失败，请检查网络连接');
+      toast.error('插入失败', '请检查网络连接');
       return false;
     } finally {
       setLoading(false);
@@ -1080,7 +925,7 @@ export default function Dimensions() {
 
     // 验证插入位置
     if (insertPosition < 1) {
-      alert('插入位置必须大于0');
+      toast.warning('插入位置无效', '插入位置必须大于0');
       return;
     }
 
@@ -1121,15 +966,15 @@ export default function Dimensions() {
   // 处理图片尺寸识别结果
   const handleDimensionsRecognized = async (dimensions: any[]) => {
     if (dimensions.length === 0) {
-      alert('没有识别到尺寸，请重新尝试');
+      toast.warning('未识别到尺寸', '没有识别到尺寸，请重新尝试');
       return;
     }
 
     // 验证尺寸组合的合理性（符合工程实际）
     // 检查每个组中是否有多个孔径尺寸
     const groupDiameterCount: { [key: number]: number } = {};
-    
-    dimensions.forEach(dim => {
+
+    dimensions.forEach((dim) => {
       const groupNo = dim.groupNumber || 1;
       if (dim.dimensionType === 'diameter') {
         groupDiameterCount[groupNo] = (groupDiameterCount[groupNo] || 0) + 1;
@@ -1139,7 +984,7 @@ export default function Dimensions() {
     // 检查是否有组包含多个孔径尺寸
     for (const [groupNo, count] of Object.entries(groupDiameterCount)) {
       if (count > 1) {
-        alert(`组 ${groupNo} 包含 ${count} 个孔径尺寸，一个尺寸组合中只能有一个孔径大小`);
+        toast.warning('孔径尺寸重复', `组 ${groupNo} 包含 ${count} 个孔径尺寸，一个尺寸组合中只能有一个孔径大小`);
         return;
       }
     }
@@ -1148,39 +993,36 @@ export default function Dimensions() {
     try {
       // 确保partNumber有值
       const currentPartNumber = partNumber || 'test';
-      
+
       // 显示批量添加的进度提示
       console.log(`正在添加 ${dimensions.length} 个尺寸...`);
       console.log('使用的partNumber:', currentPartNumber);
-      
+
       // 显示进度提示
       const progressInterval = setInterval(() => {
         console.log('添加中...');
       }, 1000);
-      
+
       // 批量添加识别的尺寸
-      const response = await fetch(
-        `/api/dimensions/projects/${selectedProject}/bulk`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(
-            dimensions.map(dim => ({
-              partId: currentPartNumber,
-              dimensionType: dim.dimensionType,
-              nominalValue: dim.nominalValue,
-              toleranceValue: dim.toleranceValue,
-              upperTolerance: dim.upperTolerance,
-              lowerTolerance: dim.lowerTolerance,
-              datum: dim.datum,
-              characteristic: dim.characteristic,
-              notes: dim.notes,
-            }))
-          ),
-        }
-      );
+      const response = await fetch(`/api/dimensions/projects/${selectedProject}/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(
+          dimensions.map((dim) => ({
+            partId: currentPartNumber,
+            dimensionType: dim.dimensionType,
+            nominalValue: dim.nominalValue,
+            toleranceValue: dim.toleranceValue,
+            upperTolerance: dim.upperTolerance,
+            lowerTolerance: dim.lowerTolerance,
+            datum: dim.datum,
+            characteristic: dim.characteristic,
+            notes: dim.notes,
+          }))
+        ),
+      });
 
       // 清除进度提示
       clearInterval(progressInterval);
@@ -1188,36 +1030,25 @@ export default function Dimensions() {
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // 重新获取数据以更新界面
-          await fetchDimensions();
-          // 显示成功消息
-          const successMessage = `✅ 成功添加 ${result.data.count} 个尺寸！`;
-          console.log(successMessage);
-          // 使用更友好的提示
-          alert(successMessage);
+          // 刷新查询以确保数据同步
+          queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
+          toast.success('添加成功', `成功添加 ${result.data.count} 个尺寸`);
           setImageRecognizerModal(false);
         } else {
-          const errorMessage = `❌ 添加失败: ${result.message}`;
-          console.error(errorMessage);
-          alert(errorMessage);
+          toast.error('添加失败', result.message);
         }
       } else {
         // 尝试获取错误响应
         try {
           const errorData = await response.json();
-          const errorMessage = `❌ 添加失败: ${errorData.message || '未知错误'}`;
-          console.error(errorMessage);
-          alert(errorMessage);
+          toast.error('添加失败', errorData.message || '未知错误');
         } catch (e) {
-          const errorMessage = '❌ 添加失败，请检查网络连接';
-          console.error(errorMessage);
-          alert(errorMessage);
+          toast.error('添加失败', '请检查网络连接');
         }
       }
     } catch (error) {
-      const errorMessage = `❌ 添加尺寸失败，请重试: ${error}`;
       console.error('添加识别尺寸失败:', error);
-      alert('添加尺寸失败，请检查网络连接并重试');
+      toast.error('添加失败', '请检查网络连接并重试');
     } finally {
       setLoading(false);
     }
@@ -1229,13 +1060,13 @@ export default function Dimensions() {
     if (file) {
       // 验证文件类型
       if (!file.type.startsWith('image/')) {
-        alert('请选择图片文件');
+        toast.warning('文件类型错误', '请选择图片文件');
         return;
       }
 
       // 验证文件大小（限制为5MB）
       if (file.size > 5 * 1024 * 1024) {
-        alert('图片文件大小不能超过5MB');
+        toast.warning('文件过大', '图片文件大小不能超过5MB');
         return;
       }
 
@@ -1243,7 +1074,7 @@ export default function Dimensions() {
 
       // 创建预览
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
@@ -1253,12 +1084,12 @@ export default function Dimensions() {
   // 上传图片并添加图片尺寸
   const handleAddImageDimension = async () => {
     if (!imageFile) {
-      alert('请选择图片文件');
+      toast.warning('请选择图片文件');
       return;
     }
 
     if (!imageCharacteristic.trim()) {
-      alert('请输入特殊特性');
+      toast.warning('请输入特殊特性');
       return;
     }
 
@@ -1266,7 +1097,7 @@ export default function Dimensions() {
 
     // 验证插入位置
     if (insertPosition < 1) {
-      alert('插入位置必须大于0');
+      toast.warning('插入位置无效', '插入位置必须大于0');
       return;
     }
 
@@ -1280,30 +1111,27 @@ export default function Dimensions() {
       formData.append('projectId', selectedProject);
       formData.append('partId', partNumber); // 传递当前选中的产品编号
 
-      const response = await fetch(
-        `/api/dimensions/projects/${selectedProject}/image-dimension`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const response = await fetch(`/api/dimensions/projects/${selectedProject}/image-dimension`, {
+        method: 'POST',
+        body: formData,
+      });
 
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          // 插入成功后重新获取数据
-          await fetchDimensions();
-          alert(`图片尺寸已插入到位置 ${insertPosition}，后续编号已自动顺延！`);
+          // 刷新查询以确保数据同步
+          queryClient.invalidateQueries({ queryKey: dimensionKeys.list(selectedProject, partNumber) });
+          toast.success('添加成功', `图片尺寸已插入到位置 ${insertPosition}`);
           closeImageModal();
         } else {
-          alert(`添加失败: ${result.message}`);
+          toast.error('添加失败', result.message);
         }
       } else {
-        alert('添加失败，请检查网络连接');
+        toast.error('添加失败', '请检查网络连接');
       }
     } catch (error) {
       console.error('添加图片尺寸失败:', error);
-      alert('添加失败，请检查网络连接');
+      toast.error('添加失败', '请检查网络连接');
     } finally {
       setLoading(false);
     }
@@ -1386,9 +1214,7 @@ export default function Dimensions() {
     };
 
     return (
-      <Badge
-        className={`${colorMap[characteristic] || 'bg-gray-100 text-gray-800 border-gray-300'} border`}
-      >
+      <Badge className={`${colorMap[characteristic] || 'bg-gray-100 text-gray-800 border-gray-300'} border`}>
         {characteristic}
       </Badge>
     );
@@ -1423,7 +1249,7 @@ export default function Dimensions() {
                 <SelectValue placeholder="选择项目" />
               </SelectTrigger>
               <SelectContent>
-                {projects.map(p => (
+                {projects.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.name || `项目 ${p.id}`}
                   </SelectItem>
@@ -1438,18 +1264,10 @@ export default function Dimensions() {
               <SelectContent>
                 {parts.map((p, idx) => {
                   const label = String(
-                    (p as any).part_number ??
-                      (p as any).产品编号 ??
-                      (p as any).part_name ??
-                      (p as any).零件名称 ??
-                      '-'
+                    (p as any).part_number ?? (p as any).产品编号 ?? (p as any).part_name ?? (p as any).零件名称 ?? '-'
                   );
                   const val = String(
-                    (p as any).part_number ??
-                      (p as any).产品编号 ??
-                      (p as any).part_name ??
-                      (p as any).零件名称 ??
-                      ''
+                    (p as any).part_number ?? (p as any).产品编号 ?? (p as any).part_name ?? (p as any).零件名称 ?? ''
                   );
                   const key = String((p as any).id ?? (p as any).ID ?? val ?? idx);
                   return (
@@ -1498,10 +1316,7 @@ export default function Dimensions() {
               )}
             </Button>
 
-            <Button
-              onClick={() => setShowImageCombiner(true)}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
+            <Button onClick={() => setShowImageCombiner(true)} className="bg-indigo-600 hover:bg-indigo-700">
               <Image className="h-4 w-4 mr-1" />
               图片拼接
             </Button>
@@ -1526,7 +1341,7 @@ export default function Dimensions() {
               尺寸绘制
             </Button>
 
-            <Button 
+            <Button
               variant="outline"
               onClick={async () => {
                 try {
@@ -1534,7 +1349,7 @@ export default function Dimensions() {
                   window.open(url, '_blank');
                 } catch (error) {
                   console.error('导出数据失败:', error);
-                  alert('导出数据失败，请检查网络连接');
+                  toast.error('导出失败', '请检查网络连接');
                 }
               }}
             >
@@ -1549,16 +1364,14 @@ export default function Dimensions() {
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg font-semibold text-slate-800">
                 尺寸数据
-                <span className="text-sm font-normal text-slate-500 ml-2">
-                  共 {dimensionData.length} 条记录
-                </span>
+                <span className="text-sm font-normal text-slate-500 ml-2">共 {dimensionData.length} 条记录</span>
               </CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
                 <Input
                   placeholder="搜索尺寸..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -1566,7 +1379,7 @@ export default function Dimensions() {
           </CardHeader>
 
           <CardContent className="p-0">
-            {loading && (
+            {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <span className="ml-2 text-slate-600">加载中...</span>
@@ -1574,10 +1387,7 @@ export default function Dimensions() {
             )}
 
             <div className="overflow-x-auto">
-              <table
-                className="border-collapse bg-white"
-                style={{ minWidth: '1200px', width: '100%' }}
-              >
+              <table className="border-collapse bg-white" style={{ minWidth: '1200px', width: '100%' }}>
                 <thead>
                   <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-300">
                     <th
@@ -1698,10 +1508,8 @@ export default function Dimensions() {
                             {editingRow === row.id ? (
                               <Select
                                 value={editData?.dimensionType || row.dimensionType}
-                                onValueChange={value =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, dimensionType: value } : null
-                                  )
+                                onValueChange={(value) =>
+                                  setEditData((prev) => (prev ? { ...prev, dimensionType: value } : null))
                                 }
                               >
                                 <SelectTrigger className="w-20 h-8 text-xs border-blue-200 focus:border-blue-400">
@@ -1732,9 +1540,7 @@ export default function Dimensions() {
                               </Select>
                             ) : (
                               <div className="w-11 h-11 bg-gradient-to-br from-indigo-100 via-blue-100 to-slate-100 rounded-xl flex items-center justify-center font-bold text-slate-800 shadow-md mx-auto border border-slate-200 hover:shadow-lg transition-all duration-200">
-                                <span className="text-lg">
-                                  {getDimensionSymbol(row.dimensionType)}
-                                </span>
+                                <span className="text-lg">{getDimensionSymbol(row.dimensionType)}</span>
                               </div>
                             )}
                           </td>
@@ -1749,10 +1555,8 @@ export default function Dimensions() {
                             ) : editingRow === row.id ? (
                               <Input
                                 value={editData?.toleranceValue || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, toleranceValue: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, toleranceValue: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="公差值"
@@ -1774,10 +1578,8 @@ export default function Dimensions() {
                             ) : editingRow === row.id ? (
                               <Input
                                 value={editData?.nominalValue || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, nominalValue: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, nominalValue: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="名义值"
@@ -1799,10 +1601,8 @@ export default function Dimensions() {
                             ) : editingRow === row.id ? (
                               <Input
                                 value={editData?.upperTolerance || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, upperTolerance: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, upperTolerance: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="上公差"
@@ -1824,10 +1624,8 @@ export default function Dimensions() {
                             ) : editingRow === row.id ? (
                               <Input
                                 value={editData?.lowerTolerance || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, lowerTolerance: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, lowerTolerance: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="下公差"
@@ -1849,10 +1647,8 @@ export default function Dimensions() {
                             ) : editingRow === row.id ? (
                               <Input
                                 value={editData?.datum || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, datum: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, datum: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="基准"
@@ -1872,22 +1668,16 @@ export default function Dimensions() {
                             {editingRow === row.id ? (
                               <Input
                                 value={editData?.characteristic || ''}
-                                onChange={e =>
-                                  setEditData(prev =>
-                                    prev ? { ...prev, characteristic: e.target.value } : null
-                                  )
+                                onChange={(e) =>
+                                  setEditData((prev) => (prev ? { ...prev, characteristic: e.target.value } : null))
                                 }
                                 className="w-20 h-8 text-center text-xs border-blue-200 focus:border-blue-400"
                                 placeholder="特性"
                               />
                             ) : (
-                              <div className="flex justify-center">
-                                {getCharacteristicBadge(row.characteristic)}
-                              </div>
+                              <div className="flex justify-center">{getCharacteristicBadge(row.characteristic)}</div>
                             )}
                           </td>
-
-
 
                           {/* 图纸尺寸列 */}
                           <td
@@ -1901,14 +1691,10 @@ export default function Dimensions() {
                               width: '150px',
                             }}
                           >
-                            {(row.dimensionType === 'image_dimension' ||
-                              row.dimensionType === 'image') &&
+                            {(row.dimensionType === 'image_dimension' || row.dimensionType === 'image') &&
                             row.imageUrl ? (
                               <div className="flex justify-center">
-                                <div
-                                  className="flex justify-center items-center p-2"
-                                  style={{ minHeight: '60px' }}
-                                >
+                                <div className="flex justify-center items-center p-2" style={{ minHeight: '60px' }}>
                                   <img
                                     src={row.imageUrl}
                                     alt="尺寸图片"
@@ -1924,11 +1710,11 @@ export default function Dimensions() {
                                     onClick={() =>
                                       setImagePreviewModal({
                                         isOpen: true,
-                                        imageUrl: row.imageUrl,
+                                        imageUrl: row.imageUrl || '',
                                         title: `尺寸图片 - ${row.characteristic || `编号${row.groupNo}`}`,
                                       })
                                     }
-                                    onError={e => {
+                                    onError={(e) => {
                                       console.error('图片加载失败:', row.imageUrl);
                                       e.currentTarget.src =
                                         'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyNkM5LjUgMjYgMSAxNy41IDEgN0MxIDMuNSA0IDEgNyAxSDMzQzM2IDEgMzkgMy41IDM5IDdDMzkgMTcuNSAzMC41IDI2IDIwIDI2WiIgZmlsbD0iI0Q1RDlERCIvPgo8L3N2Zz4K';
@@ -1936,8 +1722,7 @@ export default function Dimensions() {
                                   />
                                 </div>
                               </div>
-                            ) : row.dimensionType === 'image_dimension' ||
-                              row.dimensionType === 'image' ? (
+                            ) : row.dimensionType === 'image_dimension' || row.dimensionType === 'image' ? (
                               <div className="flex justify-center items-center">
                                 <div className="w-12 h-10 bg-gray-100 border border-gray-200 rounded flex items-center justify-center">
                                   <span className="text-gray-400 text-xs">无图片</span>
@@ -1951,9 +1736,7 @@ export default function Dimensions() {
                                     : row.dimensionType
                                 }
                                 nominalValue={
-                                  editingRow === row.id
-                                    ? editData?.nominalValue || row.nominalValue
-                                    : row.nominalValue
+                                  editingRow === row.id ? editData?.nominalValue || row.nominalValue : row.nominalValue
                                 }
                                 toleranceValue={
                                   editingRow === row.id
@@ -1970,9 +1753,7 @@ export default function Dimensions() {
                                     ? editData?.lowerTolerance || row.lowerTolerance
                                     : row.lowerTolerance
                                 }
-                                datum={
-                                  editingRow === row.id ? editData?.datum || row.datum : row.datum
-                                }
+                                datum={editingRow === row.id ? editData?.datum || row.datum : row.datum}
                                 onClick={() =>
                                   setPreviewModal({
                                     isOpen: true,
@@ -2099,324 +1880,31 @@ export default function Dimensions() {
                         </tr>
                       ))}
 
-                      {/* 新增行显示在对应组内 */}
+                      {/* 新增行显示在对应组内 - 使用 DimensionForm 组件 */}
                       {isAddingRow && addingToGroup === group.groupNumber && (
-                        <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 h-5">
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '60px', width: '60px' }}
-                          >
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center shadow-sm mx-auto">
-                              <Plus className="h-5 w-5" />
-                            </div>
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '80px', width: '80px' }}
-                          >
-                            <Select
-                              value={newRow.dimensionType}
-                              onValueChange={value =>
-                                setNewRow({ ...newRow, dimensionType: value })
-                              }
-                            >
-                              <SelectTrigger className="w-20 h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="normal">普通尺寸</SelectItem>
-                                <SelectItem value="diameter">直径 ⌀</SelectItem>
-                                <SelectItem value="position">位置度 ⌖</SelectItem>
-                                <SelectItem value="profile_surface">面轮廓 ⌓</SelectItem>
-                                <SelectItem value="profile_line">线轮廓 ⌒</SelectItem>
-                                <SelectItem value="flatness">平面度 ⏥</SelectItem>
-                                <SelectItem value="coplanarity">共面度 ⏥⏥</SelectItem>
-                                <SelectItem value="perpendicularity">垂直度 ⊥</SelectItem>
-                                <SelectItem value="angularity">倾斜度 ∠</SelectItem>
-                                <SelectItem value="concentricity">同心度 ◎</SelectItem>
-                                <SelectItem value="radius">半径 R</SelectItem>
-                                <SelectItem value="spherical_diameter">球直径 S⌀</SelectItem>
-                                <SelectItem value="spherical_radius">球半径 SR</SelectItem>
-                                <SelectItem value="straightness">直线度 ⏤</SelectItem>
-                                <SelectItem value="roundness">圆度 ○</SelectItem>
-                                <SelectItem value="cylindricity">圆柱度 ⌭</SelectItem>
-                                <SelectItem value="parallelism">平行度 ∥</SelectItem>
-                                <SelectItem value="symmetry">对称度 ⌯</SelectItem>
-                                <SelectItem value="circular_runout">圆跳动 ↗</SelectItem>
-                                <SelectItem value="total_runout">全跳动 ↗↗</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '100px', width: '100px' }}
-                          >
-                            <Input
-                              value={newRow.toleranceValue}
-                              onChange={e =>
-                                setNewRow({ ...newRow, toleranceValue: e.target.value })
-                              }
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="公差值"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '100px', width: '100px' }}
-                          >
-                            <Input
-                              value={newRow.nominalValue}
-                              onChange={e => setNewRow({ ...newRow, nominalValue: e.target.value })}
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="名义值"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '90px', width: '90px' }}
-                          >
-                            <Input
-                              value={newRow.upperTolerance}
-                              onChange={e =>
-                                setNewRow({ ...newRow, upperTolerance: e.target.value })
-                              }
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="上公差"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '90px', width: '90px' }}
-                          >
-                            <Input
-                              value={newRow.lowerTolerance}
-                              onChange={e =>
-                                setNewRow({ ...newRow, lowerTolerance: e.target.value })
-                              }
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="下公差"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '80px', width: '80px' }}
-                          >
-                            <Input
-                              value={newRow.datum}
-                              onChange={e => setNewRow({ ...newRow, datum: e.target.value })}
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="基准"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '100px', width: '100px' }}
-                          >
-                            <Input
-                              value={newRow.characteristic}
-                              onChange={e =>
-                                setNewRow({ ...newRow, characteristic: e.target.value })
-                              }
-                              className="w-20 h-8 text-center text-xs"
-                              placeholder="特性"
-                            />
-                          </td>
-
-                          <td
-                            className="text-center p-3 border-r border-blue-200"
-                            style={{ minWidth: '150px', width: '150px' }}
-                          >
-                            <DimensionImageGenerator
-                              dimensionType={newRow.dimensionType}
-                              nominalValue={newRow.nominalValue}
-                              toleranceValue={newRow.toleranceValue}
-                              upperTolerance={newRow.upperTolerance}
-                              lowerTolerance={newRow.lowerTolerance}
-                              datum={newRow.datum}
-                              onClick={() => setPreviewModal({ isOpen: true, row: newRow })}
-                              className="mx-auto scale-75"
-                            />
-                          </td>
-                          <td
-                            className="text-center p-3"
-                            style={{ minWidth: '100px', width: '100px' }}
-                          >
-                            <div className="flex gap-1 justify-center">
-                              <Button
-                                size="sm"
-                                onClick={saveNewRow}
-                                className="w-8 h-8 p-0 bg-green-600 hover:bg-green-700 border border-green-700"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={cancelNewRow}
-                                className="w-8 h-8 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
+                        <DimensionForm
+                          mode="create"
+                          row={{ ...newRow, groupNo: group.groupNumber }}
+                          onChange={handleNewRowChange}
+                          onSave={saveNewRow}
+                          onCancel={cancelNewRow}
+                          hasImages={false}
+                        />
                       )}
                     </React.Fragment>
                   ))}
 
-                  {/* 如果是新建组，在表格末尾显示新增行 */}
-                  {isAddingRow &&
-                    addingToGroup &&
-                    !dimensionGroups.find(g => g.groupNumber === addingToGroup) && (
-                      <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 h-5">
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '60px', width: '60px' }}
-                        >
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm mx-auto">
-                            {addingToGroup}
-                          </div>
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '80px', width: '80px' }}
-                        >
-                          <Select
-                            value={newRow.dimensionType}
-                            onValueChange={value => setNewRow({ ...newRow, dimensionType: value })}
-                          >
-                            <SelectTrigger className="w-20 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="normal">普通</SelectItem>
-                              <SelectItem value="diameter">孔径 ⌀</SelectItem>
-                              <SelectItem value="position">位置度 ⌖</SelectItem>
-                              <SelectItem value="profile_surface">面轮廓 ⌓</SelectItem>
-                              <SelectItem value="profile_line">线轮廓 ⌒</SelectItem>
-                              <SelectItem value="flatness">平面度 ⏥</SelectItem>
-                              <SelectItem value="coplanarity">共面度 ⏥⏥</SelectItem>
-                              <SelectItem value="perpendicularity">垂直度 ⊥</SelectItem>
-                              <SelectItem value="angularity">倾斜度 ∠</SelectItem>
-                              <SelectItem value="concentricity">同心度 ◎</SelectItem>
-                              <SelectItem value="radius">半径 R</SelectItem>
-                              <SelectItem value="spherical_diameter">球直径 S⌀</SelectItem>
-                              <SelectItem value="spherical_radius">球半径 SR</SelectItem>
-                              <SelectItem value="straightness">直线度 ⏤</SelectItem>
-                              <SelectItem value="roundness">圆度 ○</SelectItem>
-                              <SelectItem value="cylindricity">圆柱度 ⌭</SelectItem>
-                              <SelectItem value="parallelism">平行度 ∥</SelectItem>
-                              <SelectItem value="symmetry">对称度 ⌯</SelectItem>
-                              <SelectItem value="circular_runout">圆跳动 ↗</SelectItem>
-                              <SelectItem value="total_runout">全跳动 ↗↗</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '100px', width: '100px' }}
-                        >
-                          <Input
-                            value={newRow.toleranceValue}
-                            onChange={e => setNewRow({ ...newRow, toleranceValue: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="公差值"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '100px', width: '100px' }}
-                        >
-                          <Input
-                            value={newRow.nominalValue}
-                            onChange={e => setNewRow({ ...newRow, nominalValue: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="名义值"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '90px', width: '90px' }}
-                        >
-                          <Input
-                            value={newRow.upperTolerance}
-                            onChange={e => setNewRow({ ...newRow, upperTolerance: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="上公差"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '90px', width: '90px' }}
-                        >
-                          <Input
-                            value={newRow.lowerTolerance}
-                            onChange={e => setNewRow({ ...newRow, lowerTolerance: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="下公差"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '80px', width: '80px' }}
-                        >
-                          <Input
-                            value={newRow.datum}
-                            onChange={e => setNewRow({ ...newRow, datum: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="基准"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '100px', width: '100px' }}
-                        >
-                          <Input
-                            value={newRow.characteristic}
-                            onChange={e => setNewRow({ ...newRow, characteristic: e.target.value })}
-                            className="w-20 h-8 text-center text-xs"
-                            placeholder="特性"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3 border-r border-blue-200"
-                          style={{ minWidth: '150px', width: '150px' }}
-                        >
-                          <DimensionImageGenerator
-                            dimensionType={newRow.dimensionType}
-                            nominalValue={newRow.nominalValue}
-                            toleranceValue={newRow.toleranceValue}
-                            upperTolerance={newRow.upperTolerance}
-                            lowerTolerance={newRow.lowerTolerance}
-                            datum={newRow.datum}
-                            onClick={() => setPreviewModal({ isOpen: true, row: newRow })}
-                            className="mx-auto scale-75"
-                          />
-                        </td>
-                        <td
-                          className="text-center p-3"
-                          style={{ minWidth: '100px', width: '100px' }}
-                        >
-                          <div className="flex gap-1 justify-center">
-                            <Button
-                              size="sm"
-                              onClick={saveNewRow}
-                              className="w-8 h-8 p-0 bg-green-600 hover:bg-green-700 border border-green-700"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelNewRow}
-                              className="w-8 h-8 p-0 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                  {/* 如果是新建组，在表格末尾显示新增行 - 使用 DimensionForm 组件 */}
+                  {isAddingRow && addingToGroup && !dimensionGroups.find((g) => g.groupNumber === addingToGroup) && (
+                    <DimensionForm
+                      mode="create"
+                      row={{ ...newRow, groupNo: addingToGroup }}
+                      onChange={handleNewRowChange}
+                      onSave={saveNewRow}
+                      onCancel={cancelNewRow}
+                      hasImages={false}
+                    />
+                  )}
                 </tbody>
               </table>
             </div>
@@ -2430,11 +1918,7 @@ export default function Dimensions() {
           <div className="bg-white p-6 rounded-lg shadow-xl w-[90vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">尺寸绘制</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDimensionDrawingModal({ isOpen: false })}
-              >
+              <Button variant="outline" size="sm" onClick={() => setDimensionDrawingModal({ isOpen: false })}>
                 关闭
               </Button>
             </div>
@@ -2448,10 +1932,7 @@ export default function Dimensions() {
                   </CardHeader>
                   <CardContent>
                     {drawingDimensions.map((dimension) => (
-                      <div
-                        key={dimension.id}
-                        className="border border-gray-200 rounded-lg p-4 bg-white mb-4"
-                      >
+                      <div key={dimension.id} className="border border-gray-200 rounded-lg p-4 bg-white mb-4">
                         <h4 className="font-semibold mb-2">尺寸 {dimension.id}</h4>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
@@ -2566,14 +2047,14 @@ export default function Dimensions() {
                   </CardHeader>
                   <CardContent>
                     <DimensionDrawingCanvas
-                      dimensions={drawingDimensions.map(d => ({
+                      dimensions={drawingDimensions.map((d) => ({
                         id: d.id,
                         type: d.dimensionType,
                         nominalValue: d.nominalValue,
                         toleranceValue: d.toleranceValue,
                         upperTolerance: d.upperTolerance,
                         lowerTolerance: d.lowerTolerance,
-                        datum: d.datum
+                        datum: d.datum,
                       }))}
                       config={drawingConfig}
                       onDrawingComplete={setDrawingImageData}
@@ -2624,15 +2105,13 @@ export default function Dimensions() {
             <h3 className="text-lg font-semibold mb-4">插入尺寸</h3>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                插入位置（编号）
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">插入位置（编号）</label>
               <input
                 type="number"
                 min="1"
                 value={insertModal.insertPosition}
-                onChange={e =>
-                  setInsertModal(prev => ({
+                onChange={(e) =>
+                  setInsertModal((prev) => ({
                     ...prev,
                     insertPosition: parseInt(e.target.value) || 1,
                   }))
@@ -2641,8 +2120,8 @@ export default function Dimensions() {
                 placeholder="输入要插入的位置编号"
               />
               <p className="text-sm text-gray-500 mt-1">
-                在编号 {insertModal.insertPosition} 前插入新尺寸，原编号{' '}
-                {insertModal.insertPosition} 及后续编号将自动顺延
+                在编号 {insertModal.insertPosition} 前插入新尺寸，原编号 {insertModal.insertPosition}{' '}
+                及后续编号将自动顺延
               </p>
             </div>
 
@@ -2672,15 +2151,13 @@ export default function Dimensions() {
             </h3>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                插入位置（编号）
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">插入位置（编号）</label>
               <input
                 type="number"
                 min="1"
                 value={imageModal.insertPosition}
-                onChange={e =>
-                  setImageModal(prev => ({
+                onChange={(e) =>
+                  setImageModal((prev) => ({
                     ...prev,
                     insertPosition: parseInt(e.target.value) || 1,
                   }))
@@ -2688,9 +2165,7 @@ export default function Dimensions() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="输入要插入的位置编号"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                在编号 {imageModal.insertPosition} 前插入图片尺寸
-              </p>
+              <p className="text-sm text-gray-500 mt-1">在编号 {imageModal.insertPosition} 前插入图片尺寸</p>
             </div>
 
             <div className="mb-4">
@@ -2701,20 +2176,14 @@ export default function Dimensions() {
                 onChange={handleImageFileChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
-              <p className="text-sm text-gray-500 mt-1">
-                支持 JPG、PNG、GIF 等图片格式，文件大小不超过5MB
-              </p>
+              <p className="text-sm text-gray-500 mt-1">支持 JPG、PNG、GIF 等图片格式，文件大小不超过5MB</p>
             </div>
 
             {imagePreview && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">图片预览</label>
                 <div className="border border-gray-300 rounded-md p-2 bg-gray-50">
-                  <img
-                    src={imagePreview}
-                    alt="预览"
-                    className="max-w-full max-h-40 object-contain mx-auto"
-                  />
+                  <img src={imagePreview} alt="预览" className="max-w-full max-h-40 object-contain mx-auto" />
                 </div>
               </div>
             )}
@@ -2724,7 +2193,7 @@ export default function Dimensions() {
               <input
                 type="text"
                 value={imageCharacteristic}
-                onChange={e => setImageCharacteristic(e.target.value)}
+                onChange={(e) => setImageCharacteristic(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="输入特殊特性（如：IMG01、SPEC01等）"
               />
@@ -2755,7 +2224,7 @@ export default function Dimensions() {
         >
           <div
             className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-xl overflow-hidden"
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* 标题栏 */}
             <div className="flex justify-between items-center p-4 bg-gray-50 border-b">
@@ -2774,7 +2243,7 @@ export default function Dimensions() {
                 src={imagePreviewModal.imageUrl}
                 alt={imagePreviewModal.title}
                 className="max-w-full max-h-[70vh] object-contain rounded shadow-lg"
-                onError={e => {
+                onError={(e) => {
                   console.error('预览图片加载失败:', imagePreviewModal.imageUrl);
                 }}
               />
@@ -2822,14 +2291,14 @@ export default function Dimensions() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <DimensionImageCombiner
                 projectId={selectedProject}
                 partId={partNumber}
                 dimensions={dimensionData
-                  .filter(dim => selectedDimensions.includes(dim.id))
-                  .map(dim => ({
+                  .filter((dim) => selectedDimensions.includes(dim.id))
+                  .map((dim) => ({
                     id: dim.id,
                     groupNo: dim.groupNo,
                     dimensionType: dim.dimensionType,
@@ -2839,10 +2308,10 @@ export default function Dimensions() {
                     lowerTolerance: dim.lowerTolerance,
                     datum: dim.datum,
                     characteristic: dim.characteristic,
-                    notes: dim.notes
+                    notes: dim.notes,
                   }))}
                 onSaveSuccess={(combinedImageUrl) => {
-                  alert('组合图片保存成功！');
+                  toast.success('保存成功', '组合图片保存成功');
                   setShowImageCombiner(false);
                   setSelectedDimensions([]);
                 }}

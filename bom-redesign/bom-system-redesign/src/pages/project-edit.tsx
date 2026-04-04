@@ -59,10 +59,10 @@ export default function ProjectEditPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setProject(prev => ({
+        setProject((prev) => ({
           ...prev,
           signaturePreview: event.target?.result as string,
-          signatureFile: file
+          signatureFile: file,
         }));
       };
       reader.readAsDataURL(file);
@@ -78,19 +78,20 @@ export default function ProjectEditPage() {
         throw new Error(errorData?.details || errorData?.error || '获取项目详情失败');
       }
       const data = await response.json();
+      const projectData = data.data || data;
       setProject({
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        supplier_name: data.supplier_name,
-        address: data.address,
-        supplier_code: data.supplier_code,
-        customer_name: data.customer_name,
-        customer_purchase: data.customer_purchase,
-        quality_engineer: data.quality_engineer,
-        phone: data.phone,
-        email: data.email,
-        created_at: data.created_at,
+        id: projectData.id,
+        name: projectData.name,
+        description: projectData.description,
+        supplier_name: projectData.supplier_name,
+        address: projectData.address,
+        supplier_code: projectData.supplier_code,
+        customer_name: projectData.customer_name,
+        customer_purchase: projectData.customer_purchase,
+        quality_engineer: projectData.quality_engineer,
+        phone: projectData.phone,
+        email: projectData.email,
+        created_at: projectData.created_at,
         signaturePreview: '',
         signatureFile: undefined,
       });
@@ -110,7 +111,7 @@ export default function ProjectEditPage() {
     try {
       const url = id ? `/api/projects/${id}` : '/api/projects';
       const method = id ? 'PUT' : 'POST';
-      
+
       // 使用FormData来提交表单，支持文件上传
       const formData = new FormData();
       formData.append('name', project.name.trim());
@@ -176,16 +177,10 @@ export default function ProjectEditPage() {
               <Save className="mr-2 text-blue-600" size={24} />
               {id ? '编辑项目' : '创建项目'}
             </h1>
-            <p className="text-slate-500 mt-1">
-              {id ? '编辑项目信息' : '创建新项目'}
-            </p>
+            <p className="text-slate-500 mt-1">{id ? '编辑项目信息' : '创建新项目'}</p>
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => navigate('/projects')}
-            className="flex items-center"
-          >
+          <Button variant="outline" onClick={() => navigate('/projects')} className="flex items-center">
             <ArrowLeft size={16} className="mr-1" />
             返回列表
           </Button>
@@ -195,12 +190,7 @@ export default function ProjectEditPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -223,12 +213,7 @@ export default function ProjectEditPage() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -385,19 +370,10 @@ export default function ProjectEditPage() {
                 <Label htmlFor="signature" className="text-sm font-medium">
                   质量工程师签名图片
                 </Label>
-                <Input
-                  id="signature"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleSignatureUpload(e)}
-                />
+                <Input id="signature" type="file" accept="image/*" onChange={(e) => handleSignatureUpload(e)} />
                 {project.signaturePreview && (
                   <div className="mt-2">
-                    <img 
-                      src={project.signaturePreview} 
-                      alt="签名预览" 
-                      className="max-h-32 border rounded"
-                    />
+                    <img src={project.signaturePreview} alt="签名预览" className="max-h-32 border rounded" />
                   </div>
                 )}
               </div>
@@ -409,11 +385,7 @@ export default function ProjectEditPage() {
             <Button variant="outline" onClick={() => navigate('/projects')}>
               取消
             </Button>
-            <Button
-              type="submit"
-              disabled={saving || !project.name.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button type="submit" disabled={saving || !project.name?.trim()} className="bg-blue-600 hover:bg-blue-700">
               {saving ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

@@ -61,7 +61,7 @@ function makeRow(
   }));
 
   // 放置定义
-  defs.forEach(d => {
+  defs.forEach((d) => {
     const col = Math.max(0, Math.min(15, d.col));
     base[col].content = d.content ?? '';
     if (d.colSpan && d.colSpan > 1) base[col].colSpan = d.colSpan;
@@ -189,7 +189,7 @@ const odsTemplateData: Cell[][] = [
         align: 'left',
       },
     ]);
-    r.forEach(c => {
+    r.forEach((c) => {
       c.height = '1.5rem';
     });
     return r;
@@ -297,13 +297,7 @@ export default function TableEditorPage() {
 
           <TabsContent value="template">
             <div className="border rounded-lg overflow-hidden shadow-sm p-4 bg-gray-900 text-white">
-              {tableData && (
-                <TableEditor
-                  initialRows={finalData.length}
-                  initialCols={16}
-                  initialData={tableData}
-                />
-              )}
+              {tableData && <TableEditor initialRows={finalData.length} initialCols={16} initialData={tableData} />}
               {!tableData && <div className="text-center p-4">加载ODS模板中...</div>}
             </div>
           </TabsContent>
@@ -312,14 +306,10 @@ export default function TableEditorPage() {
             <Card>
               <CardHeader>
                 <CardTitle>说明</CardTitle>
-                <CardDescription>
-                  表头与表尾已对齐图片；右下角日期自动取当天，其他固定字段不变。
-                </CardDescription>
+                <CardDescription>表头与表尾已对齐图片；右下角日期自动取当天，其他固定字段不变。</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div>
-                  中部区域可自由拖拽合并、粘贴图片（作为简图/工程图），也可继续添加“尺寸检验”明细。
-                </div>
+                <div>中部区域可自由拖拽合并、粘贴图片（作为简图/工程图），也可继续添加“尺寸检验”明细。</div>
               </CardContent>
             </Card>
           </TabsContent>

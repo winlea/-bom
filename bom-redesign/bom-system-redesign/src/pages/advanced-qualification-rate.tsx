@@ -1,47 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { 
-  Download, 
-  RefreshCw, 
-  AlertTriangle, 
-  CheckCircle, 
+  Download,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle,
   XCircle,
   ChevronDown,
   ChevronRight,
   TreePine,
   Package,
   Wrench,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 
 // 数据接口定义
@@ -144,27 +121,30 @@ export default function AdvancedQualificationRatePage() {
   // 获取高级合格率数据
   const fetchAdvancedQualificationData = async (projectId: string) => {
     if (!projectId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // 获取汇总数据
-      const summaryResponse = await fetch(`http://localhost:5000/api/advanced-qualification/project/${projectId}/summary`);
+      const summaryResponse = await fetch(
+        `http://localhost:5000/api/advanced-qualification/project/${projectId}/summary`
+      );
       const summaryData = await summaryResponse.json();
-      
+
       if (summaryData.success) {
         setQualificationData(summaryData.data);
       }
 
       // 获取分层数据
-      const hierarchicalResponse = await fetch(`http://localhost:5000/api/advanced-qualification/project/${projectId}/hierarchical`);
+      const hierarchicalResponse = await fetch(
+        `http://localhost:5000/api/advanced-qualification/project/${projectId}/hierarchical`
+      );
       const hierarchicalData = await hierarchicalResponse.json();
-      
+
       if (hierarchicalData.success) {
         setHierarchicalData(hierarchicalData.data);
       }
-      
     } catch (err) {
       console.error('获取高级合格率数据失败:', err);
       setError('获取高级合格率数据失败');
@@ -207,16 +187,20 @@ export default function AdvancedQualificationRatePage() {
 
     const getNodeIcon = () => {
       switch (node.type) {
-        case 'project': return <TreePine className="h-4 w-4 text-blue-600" />;
-        case 'assembly': return <Package className="h-4 w-4 text-purple-600" />;
-        case 'part': return <Wrench className="h-4 w-4 text-green-600" />;
-        default: return null;
+        case 'project':
+          return <TreePine className="h-4 w-4 text-blue-600" />;
+        case 'assembly':
+          return <Package className="h-4 w-4 text-purple-600" />;
+        case 'part':
+          return <Wrench className="h-4 w-4 text-green-600" />;
+        default:
+          return null;
       }
     };
 
     return (
       <div key={node.id} className="border-l-2 border-gray-200">
-        <div 
+        <div
           className={`flex items-center p-3 hover:bg-gray-50 cursor-pointer ${level > 0 ? 'ml-6' : ''}`}
           onClick={() => hasChildren && toggleNodeExpansion(node.id)}
         >
@@ -227,9 +211,9 @@ export default function AdvancedQualificationRatePage() {
               </div>
             )}
             {!hasChildren && <div className="w-6" />}
-            
+
             <div className="mr-3">{getNodeIcon()}</div>
-            
+
             <div className="flex-1">
               <div className="font-medium">
                 {node.part_number && <span className="text-sm text-gray-500 mr-2">[{node.part_number}]</span>}
@@ -239,21 +223,27 @@ export default function AdvancedQualificationRatePage() {
                 {node.total_dimensions} 个尺寸 | {node.qualified_dimensions} 个合格
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <Progress value={node.qualification_rate} className="w-20" />
               <span className="text-sm font-medium w-12">{node.qualification_rate.toFixed(1)}%</span>
-              <StatusIcon className={`h-4 w-4 ${status.color.includes('green') ? 'text-green-600' : 
-                                                 status.color.includes('blue') ? 'text-blue-600' :
-                                                 status.color.includes('yellow') ? 'text-yellow-600' : 'text-red-600'}`} />
+              <StatusIcon
+                className={`h-4 w-4 ${
+                  status.color.includes('green')
+                    ? 'text-green-600'
+                    : status.color.includes('blue')
+                      ? 'text-blue-600'
+                      : status.color.includes('yellow')
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                }`}
+              />
             </div>
           </div>
         </div>
-        
+
         {hasChildren && isExpanded && (
-          <div className="ml-4">
-            {node.children.map(child => renderHierarchicalNode(child, level + 1))}
-          </div>
+          <div className="ml-4">{node.children.map((child) => renderHierarchicalNode(child, level + 1))}</div>
         )}
       </div>
     );
@@ -262,15 +252,29 @@ export default function AdvancedQualificationRatePage() {
   // 导出报告
   const handleExportReport = async () => {
     if (!selectedProject) return;
-    
+
     try {
-      const response = await fetch(`http://localhost:5000/api/advanced-qualification/project/${selectedProject}/export`);
+      const response = await fetch(
+        `http://localhost:5000/api/advanced-qualification/project/${selectedProject}/export`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         // 创建CSV内容
         const csvContent = [
-          ['序号', '零件号', '零件名称', '常规尺寸总数', '常规尺寸合格数', '常规尺寸合格率(%)', '特殊特性总数', '特殊特性合格数', '特殊特性合格率(%)', '总合格率(%)', '状态'],
+          [
+            '序号',
+            '零件号',
+            '零件名称',
+            '常规尺寸总数',
+            '常规尺寸合格数',
+            '常规尺寸合格率(%)',
+            '特殊特性总数',
+            '特殊特性合格数',
+            '特殊特性合格率(%)',
+            '总合格率(%)',
+            '状态',
+          ],
           ...data.export_data.detailed_results.map((item: any) => [
             item.sequence,
             item.part_number,
@@ -282,9 +286,11 @@ export default function AdvancedQualificationRatePage() {
             item.special_dimensions_qualified,
             item.special_qualification_rate.toFixed(1),
             item.overall_qualification_rate.toFixed(1),
-            item.status
-          ])
-        ].map(row => row.join(',')).join('\n');
+            item.status,
+          ]),
+        ]
+          .map((row) => row.join(','))
+          .join('\n');
 
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
@@ -315,8 +321,8 @@ export default function AdvancedQualificationRatePage() {
           <CardContent>
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex-1 max-w-xs">
-                <select 
-                  value={selectedProject} 
+                <select
+                  value={selectedProject}
                   onChange={(e) => handleProjectChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -328,7 +334,7 @@ export default function AdvancedQualificationRatePage() {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex gap-2">
                 <Button
                   onClick={() => setViewMode('table')}
@@ -347,7 +353,7 @@ export default function AdvancedQualificationRatePage() {
                   分层视图
                 </Button>
               </div>
-              
+
               <Button
                 onClick={() => fetchAdvancedQualificationData(selectedProject)}
                 disabled={!selectedProject || loading}
@@ -356,12 +362,8 @@ export default function AdvancedQualificationRatePage() {
                 <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 刷新数据
               </Button>
-              
-              <Button
-                onClick={handleExportReport}
-                disabled={!qualificationData}
-                variant="outline"
-              >
+
+              <Button onClick={handleExportReport} disabled={!qualificationData} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 导出报告
               </Button>
@@ -382,17 +384,13 @@ export default function AdvancedQualificationRatePage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">
-                  {qualificationData.summary.total_parts}
-                </div>
+                <div className="text-2xl font-bold text-green-600">{qualificationData.summary.total_parts}</div>
                 <div className="text-sm text-slate-500">零件总数</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-purple-600">
-                  {qualificationData.summary.total_dimensions}
-                </div>
+                <div className="text-2xl font-bold text-purple-600">{qualificationData.summary.total_dimensions}</div>
                 <div className="text-sm text-slate-500">尺寸总数</div>
               </CardContent>
             </Card>
@@ -425,51 +423,54 @@ export default function AdvancedQualificationRatePage() {
         )}
 
         {/* 数据验证警告 */}
-        {qualificationData && (qualificationData.summary.validation_errors.length > 0 || qualificationData.summary.validation_warnings.length > 0) && (
-          <Card className="mb-6 border-yellow-200">
-            <CardHeader>
-              <CardTitle className="flex items-center text-yellow-800">
-                <AlertTriangle className="mr-2 h-5 w-5" />
-                数据验证提醒
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {qualificationData.summary.validation_errors.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-medium text-red-800 mb-2">错误 ({qualificationData.summary.validation_errors.length})</h4>
-                  <ul className="list-disc list-inside text-sm text-red-700">
-                    {qualificationData.summary.validation_errors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {qualificationData.summary.validation_warnings.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-yellow-800 mb-2">警告 ({qualificationData.summary.validation_warnings.length})</h4>
-                  <ul className="list-disc list-inside text-sm text-yellow-700">
-                    {qualificationData.summary.validation_warnings.map((warning, index) => (
-                      <li key={index}>{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        {qualificationData &&
+          (qualificationData.summary.validation_errors.length > 0 ||
+            qualificationData.summary.validation_warnings.length > 0) && (
+            <Card className="mb-6 border-yellow-200">
+              <CardHeader>
+                <CardTitle className="flex items-center text-yellow-800">
+                  <AlertTriangle className="mr-2 h-5 w-5" />
+                  数据验证提醒
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {qualificationData.summary.validation_errors.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-medium text-red-800 mb-2">
+                      错误 ({qualificationData.summary.validation_errors.length})
+                    </h4>
+                    <ul className="list-disc list-inside text-sm text-red-700">
+                      {qualificationData.summary.validation_errors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {qualificationData.summary.validation_warnings.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-yellow-800 mb-2">
+                      警告 ({qualificationData.summary.validation_warnings.length})
+                    </h4>
+                    <ul className="list-disc list-inside text-sm text-yellow-700">
+                      {qualificationData.summary.validation_warnings.map((warning, index) => (
+                        <li key={index}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
         {/* 主要内容区域 */}
         {qualificationData && (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {viewMode === 'table' ? '详细统计表格' : '分层结构视图'}
-              </CardTitle>
+              <CardTitle>{viewMode === 'table' ? '详细统计表格' : '分层结构视图'}</CardTitle>
               <CardDescription>
-                {viewMode === 'table' 
+                {viewMode === 'table'
                   ? '显示所有零件的详细合格率统计信息，包括常规尺寸和特殊特性'
-                  : '以树形结构展示项目、装配和零件的层级关系及合格率'
-                }
+                  : '以树形结构展示项目、装配和零件的层级关系及合格率'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -498,49 +499,43 @@ export default function AdvancedQualificationRatePage() {
                         const status = getQualificationStatus(part.overall_qualification_rate);
                         return (
                           <TableRow key={part.part_id} className="hover:bg-slate-50">
-                            <TableCell className="text-center font-medium">
-                              {index + 1}
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {part.part_number}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {part.part_name}
-                            </TableCell>
+                            <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                            <TableCell className="font-mono text-sm">{part.part_number}</TableCell>
+                            <TableCell className="font-medium">{part.part_name}</TableCell>
                             <TableCell className="text-center">
-                              <Badge variant="outline">
-                                等级 {part.assembly_level}
-                              </Badge>
+                              <Badge variant="outline">等级 {part.assembly_level}</Badge>
                             </TableCell>
+                            <TableCell className="text-center">{part.regular_dimensions_total}</TableCell>
+                            <TableCell className="text-center">{part.regular_dimensions_qualified}</TableCell>
                             <TableCell className="text-center">
-                              {part.regular_dimensions_total}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {part.regular_dimensions_qualified}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                part.regular_qualification_rate >= 95 ? 'bg-green-100 text-green-800' :
-                                part.regular_qualification_rate >= 85 ? 'bg-blue-100 text-blue-800' :
-                                part.regular_qualification_rate >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
+                              <span
+                                className={`px-2 py-1 rounded text-sm ${
+                                  part.regular_qualification_rate >= 95
+                                    ? 'bg-green-100 text-green-800'
+                                    : part.regular_qualification_rate >= 85
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : part.regular_qualification_rate >= 70
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                }`}
+                              >
                                 {part.regular_qualification_rate.toFixed(1)}%
                               </span>
                             </TableCell>
+                            <TableCell className="text-center">{part.special_dimensions_total}</TableCell>
+                            <TableCell className="text-center">{part.special_dimensions_qualified}</TableCell>
                             <TableCell className="text-center">
-                              {part.special_dimensions_total}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {part.special_dimensions_qualified}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className={`px-2 py-1 rounded text-sm ${
-                                part.special_qualification_rate >= 95 ? 'bg-green-100 text-green-800' :
-                                part.special_qualification_rate >= 85 ? 'bg-blue-100 text-blue-800' :
-                                part.special_qualification_rate >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
+                              <span
+                                className={`px-2 py-1 rounded text-sm ${
+                                  part.special_qualification_rate >= 95
+                                    ? 'bg-green-100 text-green-800'
+                                    : part.special_qualification_rate >= 85
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : part.special_qualification_rate >= 70
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                }`}
+                              >
                                 {part.special_qualification_rate.toFixed(1)}%
                               </span>
                             </TableCell>
@@ -549,13 +544,9 @@ export default function AdvancedQualificationRatePage() {
                                 {part.overall_qualification_rate.toFixed(1)}%
                               </span>
                             </TableCell>
+                            <TableCell className="text-center">{part.weight_in_parent.toFixed(1)}</TableCell>
                             <TableCell className="text-center">
-                              {part.weight_in_parent.toFixed(1)}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Badge className={status.color}>
-                                {status.label}
-                              </Badge>
+                              <Badge className={status.color}>{status.label}</Badge>
                             </TableCell>
                           </TableRow>
                         );
@@ -564,9 +555,7 @@ export default function AdvancedQualificationRatePage() {
                   </Table>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {hierarchicalData && renderHierarchicalNode(hierarchicalData)}
-                </div>
+                <div className="space-y-2">{hierarchicalData && renderHierarchicalNode(hierarchicalData)}</div>
               )}
             </CardContent>
           </Card>
@@ -587,9 +576,12 @@ export default function AdvancedQualificationRatePage() {
                       <div className="flex items-center space-x-4">
                         <Package className="h-5 w-5 text-purple-600" />
                         <div>
-                          <div className="font-medium">{assembly.part_name} [{assembly.part_number}]</div>
+                          <div className="font-medium">
+                            {assembly.part_name} [{assembly.part_number}]
+                          </div>
                           <div className="text-sm text-gray-500">
-                            包含 {assembly.sub_parts_count} 个子零件 | 总合格率: {assembly.overall_qualification_rate.toFixed(1)}%
+                            包含 {assembly.sub_parts_count} 个子零件 | 总合格率:{' '}
+                            {assembly.overall_qualification_rate.toFixed(1)}%
                           </div>
                         </div>
                       </div>

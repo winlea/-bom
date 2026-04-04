@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 from bom_system.admin import admin_bp
 from bom_system.api.error_handler import register_error_handlers
-from bom_system.api_main import api_bp
+from bom_system.api_main import init_api
 from bom_system.config.manager import ConfigManager
 from bom_system.database.session import init_db_engine
 from bom_system.dimensions.api import dimensions_bp
@@ -69,7 +69,7 @@ def create_app() -> Flask:
     )
 
     # Blueprints
-    app.register_blueprint(api_bp, url_prefix="/api")
+    init_api(app)
     app.register_blueprint(admin_bp)
     app.register_blueprint(projects_bp, url_prefix="/api")
     app.register_blueprint(dimensions_bp)

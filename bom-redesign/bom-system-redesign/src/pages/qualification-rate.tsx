@@ -1,28 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Download, RefreshCw, AlertTriangle } from 'lucide-react';
 
@@ -88,14 +69,14 @@ export default function QualificationRatePage() {
   // 获取合格率数据
   const fetchQualificationData = async (projectId: string) => {
     if (!projectId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`http://localhost:5000/api/qualification/table/${projectId}`);
       const data = await response.json();
-      
+
       if (data.success) {
         // 模拟特殊特性数据（实际应从后端获取）
         const enhancedParts = data.parts.map((part: any, index: number) => ({
@@ -108,12 +89,12 @@ export default function QualificationRatePage() {
           special_characteristics: Math.floor(part.total_dimensions * 0.3), // 30%为特殊特性
           qualified_special_characteristics: Math.floor(part.qualified_dimensions * 0.9),
           special_qualification_rate: Math.round(Math.random() * 20 + 80), // 80-100%
-          overall_qualification_rate: Math.round((part.qualification_rate * 0.7) + (Math.random() * 20 + 80) * 0.3)
+          overall_qualification_rate: Math.round(part.qualification_rate * 0.7 + (Math.random() * 20 + 80) * 0.3),
         }));
 
         setQualificationData({
           ...data,
-          parts: enhancedParts
+          parts: enhancedParts,
         });
       } else {
         setError('获取合格率数据失败');
@@ -143,10 +124,21 @@ export default function QualificationRatePage() {
   // 导出Excel
   const handleExport = () => {
     if (!qualificationData) return;
-    
+
     // 这里可以调用后端导出API
     const csvContent = [
-      ['序号', '零件号', '零件名称', '全尺寸数量', '合格尺寸数量', '尺寸合格率(%)', '特殊特性数量', '合格特殊特性数量', '特殊特性合格率(%)', '总合格率(%)'],
+      [
+        '序号',
+        '零件号',
+        '零件名称',
+        '全尺寸数量',
+        '合格尺寸数量',
+        '尺寸合格率(%)',
+        '特殊特性数量',
+        '合格特殊特性数量',
+        '特殊特性合格率(%)',
+        '总合格率(%)',
+      ],
       ...qualificationData.parts.map((part, index) => [
         index + 1,
         part.part_number,
@@ -157,9 +149,11 @@ export default function QualificationRatePage() {
         part.special_characteristics,
         part.qualified_special_characteristics,
         part.special_qualification_rate,
-        part.overall_qualification_rate
-      ])
-    ].map(row => row.join(',')).join('\n');
+        part.overall_qualification_rate,
+      ]),
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
 
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -187,8 +181,8 @@ export default function QualificationRatePage() {
             <div className="flex items-center gap-4">
               <div className="flex-1 max-w-xs">
                 {/* 原生select作为备用 */}
-                <select 
-                  value={selectedProject} 
+                <select
+                  value={selectedProject}
                   onChange={(e) => handleProjectChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -199,7 +193,7 @@ export default function QualificationRatePage() {
                     </option>
                   ))}
                 </select>
-                
+
                 {/* 显示调试信息 */}
                 <div className="mt-2 text-sm text-gray-500">
                   项目数量: {projects.length} | 选中项目: {selectedProject || '未选择'}
@@ -213,11 +207,7 @@ export default function QualificationRatePage() {
                 <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 刷新数据
               </Button>
-              <Button
-                onClick={handleExport}
-                disabled={!qualificationData}
-                variant="outline"
-              >
+              <Button onClick={handleExport} disabled={!qualificationData} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 导出Excel
               </Button>
@@ -230,33 +220,25 @@ export default function QualificationRatePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">
-                  {qualificationData.overall_rate.toFixed(1)}%
-                </div>
+                <div className="text-2xl font-bold text-blue-600">{qualificationData.overall_rate.toFixed(1)}%</div>
                 <div className="text-sm text-slate-500">项目总合格率</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">
-                  {qualificationData.total_parts}
-                </div>
+                <div className="text-2xl font-bold text-green-600">{qualificationData.total_parts}</div>
                 <div className="text-sm text-slate-500">零件总数</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-purple-600">
-                  {qualificationData.total_dimensions}
-                </div>
+                <div className="text-2xl font-bold text-purple-600">{qualificationData.total_dimensions}</div>
                 <div className="text-sm text-slate-500">尺寸总数</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">
-                  {qualificationData.qualified_dimensions}
-                </div>
+                <div className="text-2xl font-bold text-orange-600">{qualificationData.qualified_dimensions}</div>
                 <div className="text-sm text-slate-500">合格尺寸数</div>
               </CardContent>
             </Card>
@@ -280,9 +262,7 @@ export default function QualificationRatePage() {
           <Card>
             <CardHeader>
               <CardTitle>零件合格率详细统计</CardTitle>
-              <CardDescription>
-                显示项目中所有零件的详细合格率信息，包括普通尺寸和特殊特性
-              </CardDescription>
+              <CardDescription>显示项目中所有零件的详细合格率信息，包括普通尺寸和特殊特性</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -307,61 +287,60 @@ export default function QualificationRatePage() {
                       const status = getQualificationStatus(part.overall_qualification_rate);
                       return (
                         <TableRow key={part.part_id} className="hover:bg-slate-50">
-                          <TableCell className="text-center font-medium">
-                            {index + 1}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {part.part_number}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {part.part_name}
-                          </TableCell>
+                          <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                          <TableCell className="font-mono text-sm">{part.part_number}</TableCell>
+                          <TableCell className="font-medium">{part.part_name}</TableCell>
+                          <TableCell className="text-center">{part.total_dimensions}</TableCell>
+                          <TableCell className="text-center">{part.qualified_dimensions}</TableCell>
                           <TableCell className="text-center">
-                            {part.total_dimensions}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {part.qualified_dimensions}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className={`px-2 py-1 rounded text-sm ${
-                              part.dimension_qualification_rate >= 95 ? 'bg-green-100 text-green-800' :
-                              part.dimension_qualification_rate >= 85 ? 'bg-blue-100 text-blue-800' :
-                              part.dimension_qualification_rate >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded text-sm ${
+                                part.dimension_qualification_rate >= 95
+                                  ? 'bg-green-100 text-green-800'
+                                  : part.dimension_qualification_rate >= 85
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : part.dimension_qualification_rate >= 70
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {part.dimension_qualification_rate.toFixed(1)}%
                             </span>
                           </TableCell>
+                          <TableCell className="text-center">{part.special_characteristics}</TableCell>
+                          <TableCell className="text-center">{part.qualified_special_characteristics}</TableCell>
                           <TableCell className="text-center">
-                            {part.special_characteristics}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {part.qualified_special_characteristics}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className={`px-2 py-1 rounded text-sm ${
-                              part.special_qualification_rate >= 95 ? 'bg-green-100 text-green-800' :
-                              part.special_qualification_rate >= 85 ? 'bg-blue-100 text-blue-800' :
-                              part.special_qualification_rate >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded text-sm ${
+                                part.special_qualification_rate >= 95
+                                  ? 'bg-green-100 text-green-800'
+                                  : part.special_qualification_rate >= 85
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : part.special_qualification_rate >= 70
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {part.special_qualification_rate.toFixed(1)}%
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className={`px-2 py-1 rounded text-sm font-medium ${
-                              part.overall_qualification_rate >= 95 ? 'bg-green-100 text-green-800' :
-                              part.overall_qualification_rate >= 85 ? 'bg-blue-100 text-blue-800' :
-                              part.overall_qualification_rate >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded text-sm font-medium ${
+                                part.overall_qualification_rate >= 95
+                                  ? 'bg-green-100 text-green-800'
+                                  : part.overall_qualification_rate >= 85
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : part.overall_qualification_rate >= 70
+                                      ? 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
+                              }`}
+                            >
                               {part.overall_qualification_rate.toFixed(1)}%
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Badge className={status.color}>
-                              {status.label}
-                            </Badge>
+                            <Badge className={status.color}>{status.label}</Badge>
                           </TableCell>
                         </TableRow>
                       );

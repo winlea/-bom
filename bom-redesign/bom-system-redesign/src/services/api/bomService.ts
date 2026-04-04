@@ -56,11 +56,11 @@ class BomService {
       // 构建包含详细错误信息的错误对象
       const errorMessage = error.errorMessage || error.message || '导入BOM失败';
       const errorDetails = error.errorDetails || error.response?.data?.details || error.response?.data?.errors;
-      
+
       const enhancedError = new Error(errorMessage);
       (enhancedError as any).errorDetails = errorDetails;
       (enhancedError as any).originalError = error;
-      
+
       throw enhancedError;
     }
   }

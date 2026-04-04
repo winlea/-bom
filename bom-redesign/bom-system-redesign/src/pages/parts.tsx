@@ -1,14 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Layout, { Breadcrumb } from '@/components/layout';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -93,15 +87,12 @@ function ImageThumb({ part }: { part: Part }) {
           alt={(part as any).零件名称 || part.part_name || part.part_number || '零件图片'}
           className="h-12 w-12 object-cover rounded-md border border-slate-200 cursor-zoom-in transition-all group-hover:shadow-md"
           onClick={() => setOpen(true)}
-          onError={e => {
+          onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG;
           }}
         />
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all rounded-md">
-          <Eye
-            size={16}
-            className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-          />
+          <Eye size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -111,7 +102,7 @@ function ImageThumb({ part }: { part: Part }) {
               src={src}
               alt={(part as any).零件名称 || part.part_name || part.part_number || '零件图片'}
               className="w-full h-auto rounded-md"
-              onError={e => {
+              onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG;
               }}
             />
@@ -125,9 +116,7 @@ function ImageThumb({ part }: { part: Part }) {
             </Button>
           </div>
           <div className="mt-2 text-sm text-slate-500">
-            {part.part_name || part.part_number ? (
-              <p>零件名称: {part.part_name || part.part_number}</p>
-            ) : null}
+            {part.part_name || part.part_number ? <p>零件名称: {part.part_name || part.part_number}</p> : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -138,8 +127,9 @@ function ImageThumb({ part }: { part: Part }) {
 export default function PartsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
+  const [selectedProject, setSelectedProject] = useState<string>('');
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -147,19 +137,24 @@ export default function PartsPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // 从 URL searchParams 解析 project_id
+  const urlProjectId = useMemo(() => searchParams.get('project_id'), [searchParams]);
+
   useEffect(() => {
     loadProjects();
   }, []);
 
+  // 当 urlProjectId 变化时，直接设置 selectedProject
   useEffect(() => {
-    const q = getQueryParam('project_id');
-    if (q && /^\d+$/.test(q)) {
-      setSelectedProject(q);
+    if (urlProjectId && /^\d+$/.test(urlProjectId)) {
+      setSelectedProject(urlProjectId);
     }
-  }, [location.search]);
+  }, [urlProjectId]);
 
   useEffect(() => {
-    if (selectedProject) fetchParts(selectedProject);
+    if (selectedProject) {
+      fetchParts(selectedProject);
+    }
   }, [selectedProject]);
 
   async function loadProjects() {
@@ -172,9 +167,13 @@ export default function PartsPage() {
       else if (j && Array.isArray(j.data)) items = j.data;
       else if (j && j.data && Array.isArray(j.data.items)) items = j.data.items;
       setProjects(items);
-      if (!selectedProject && items.length > 0) {
-        setSelectedProject(String(items[0].id));
+      
+      // 只在 URL 有 project_id 时设置，否则保持空（让用户手动选择）
+      const currentUrlProjectId = new URL(window.location.href).searchParams.get('project_id');
+      if (currentUrlProjectId && /^\d+$/.test(currentUrlProjectId)) {
+        setSelectedProject(currentUrlProjectId);
       }
+      // 不自动选择第一个项目
     } catch (e: any) {
       setProjects([]);
       alert('加载项目列表失败：' + (e?.message || e));
@@ -211,8 +210,10 @@ export default function PartsPage() {
   }
 
   function handleProjectChange(v: string) {
-    setSelectedProject(v);
-    navigate(`/parts?project_id=${v}`, { replace: true });
+    if (v) {
+      setSelectedProject(v);
+      navigate(`/parts?project_id=${v}`, { replace: true });
+    }
   }
 
   function handleSort(field: string) {
@@ -230,8 +231,7 @@ export default function PartsPage() {
       {
         key: 'assembly_level',
         label: '装配等级',
-        render: (pt: Part) =>
-          (pt as any).assembly_level ?? (pt as any).装配等级 ?? (pt as any).level ?? '-',
+        render: (pt: Part) => (pt as any).assembly_level ?? (pt as any).装配等级 ?? (pt as any).level ?? '-',
       },
       {
         key: 'part_number',
@@ -240,7 +240,7 @@ export default function PartsPage() {
           const pn = pt.part_number ?? (pt as any).产品编号 ?? '-';
           const pnStr = String(pn || '-');
           const go = () => {
-            const projName = projects.find(p => String(p.id) === selectedProject)?.name || '';
+            const projName = projects.find((p) => String(p.id) === selectedProject)?.name || '';
             const qProjectName = encodeURIComponent(projName);
             const qPartNumber = encodeURIComponent(pnStr);
             navigate(
@@ -310,7 +310,7 @@ export default function PartsPage() {
           const name = pt.part_name ?? (pt as any).零件名称 ?? '-';
           const pn = pt.part_number ?? (pt as any).产品编号 ?? '';
           const go = () => {
-            const projName = projects.find(p => String(p.id) === selectedProject)?.name || '';
+            const projName = projects.find((p) => String(p.id) === selectedProject)?.name || '';
             const qProjectName = encodeURIComponent(projName);
             const qPartNumber = encodeURIComponent(String(pn || name || ''));
             navigate(
@@ -333,8 +333,7 @@ export default function PartsPage() {
       {
         key: 'original_material',
         label: '原图材料',
-        render: (pt: Part) =>
-          pt.original_material ?? (pt as any).原图材料 ?? (pt as any).原始材质 ?? '-',
+        render: (pt: Part) => pt.original_material ?? (pt as any).原图材料 ?? (pt as any).原始材质 ?? '-',
       },
       {
         key: 'final_material_cn',
@@ -359,8 +358,7 @@ export default function PartsPage() {
       {
         key: 'net_weight_kg',
         label: '产品净重(KG)',
-        render: (pt: Part) =>
-          pt.net_weight_kg ?? (pt as any)['产品净重(KG/PCS)'] ?? (pt as any).net_weight ?? '-',
+        render: (pt: Part) => pt.net_weight_kg ?? (pt as any)['产品净重(KG/PCS)'] ?? (pt as any).net_weight ?? '-',
       },
       {
         key: 'process_capability',
@@ -369,18 +367,19 @@ export default function PartsPage() {
           const handleGenerate = async (e: React.MouseEvent<HTMLButtonElement>) => {
             const button = e.currentTarget;
             const originalContent = button.innerHTML;
-            
+
             // 设置加载状态
-            button.innerHTML = '<div class="flex items-center"><svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>生成中</div>';
+            button.innerHTML =
+              '<div class="flex items-center"><svg class="mr-1 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>生成中</div>';
             button.disabled = true;
-            
+
             try {
               console.log('开始生成报告，零件ID：', pt.id);
               console.log('零件信息：', pt);
-              
+
               const apiUrl = '/api/process-capability/generate';
               console.log('API URL：', apiUrl);
-              
+
               const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -388,19 +387,19 @@ export default function PartsPage() {
                 },
                 body: JSON.stringify({ part_id: pt.id }),
               });
-              
+
               console.log('API响应状态：', response.status);
               console.log('API响应头：', response.headers);
-              
+
               if (response.ok) {
                 // 处理文件下载
                 const blob = await response.blob();
                 console.log('文件大小：', blob.size);
-                
+
                 // 检查响应头中的文件名
                 const contentDisposition = response.headers.get('content-disposition');
                 console.log('Content-Disposition：', contentDisposition);
-                
+
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -430,7 +429,7 @@ export default function PartsPage() {
               button.disabled = false;
             }
           };
-          
+
           return (
             <Button
               size="sm"
@@ -451,7 +450,7 @@ export default function PartsPage() {
   const filtered = useMemo(() => {
     if (!search) return parts;
     const s = search.toLowerCase();
-    return parts.filter(pt => {
+    return parts.filter((pt) => {
       const values = [
         pt.part_number,
         pt.part_name,
@@ -476,8 +475,8 @@ export default function PartsPage() {
         (pt as any).原图材料,
         (pt as any).零件分类,
         (pt as any)['产品净重(KG/PCS)'],
-      ].map(x => String(x || '').toLowerCase());
-      return values.some(f => f.includes(s));
+      ].map((x) => String(x || '').toLowerCase());
+      return values.some((f) => f.includes(s));
     });
   }, [parts, search]);
 
@@ -511,15 +510,9 @@ export default function PartsPage() {
           break;
         case 'final_material_cn':
           valueA =
-            (a as any).final_material_cn ??
-            (a as any)['终审拟代材料（中国标准）'] ??
-            (a as any)['终审拟代材料'] ??
-            '';
+            (a as any).final_material_cn ?? (a as any)['终审拟代材料（中国标准）'] ?? (a as any)['终审拟代材料'] ?? '';
           valueB =
-            (b as any).final_material_cn ??
-            (b as any)['终审拟代材料（中国标准）'] ??
-            (b as any)['终审拟代材料'] ??
-            '';
+            (b as any).final_material_cn ?? (b as any)['终审拟代材料（中国标准）'] ?? (b as any)['终审拟代材料'] ?? '';
           break;
         case 'category':
           valueA = (a as any).category ?? (a as any).零件分类 ?? '';
@@ -552,7 +545,7 @@ export default function PartsPage() {
     });
   }, [filtered, sortField, sortDirection]);
 
-  const currentProject = projects.find(p => String(p.id) === selectedProject);
+  const currentProject = projects.find((p) => String(p.id) === selectedProject);
 
   return (
     <Layout projectCount={projects.length} partsCount={parts.length}>
@@ -572,9 +565,7 @@ export default function PartsPage() {
                 <Layers className="mr-2 text-blue-600" size={24} />
                 零件列表
               </h1>
-              <p className="text-sm text-slate-500 mt-1">
-                查看和管理当前项目下的所有零件，可切换项目或导入新BOM
-              </p>
+              <p className="text-sm text-slate-500 mt-1">查看和管理当前项目下的所有零件，可切换项目或导入新BOM</p>
             </div>
 
             <div className="flex items-end gap-3 flex-wrap">
@@ -585,7 +576,7 @@ export default function PartsPage() {
                     <SelectValue placeholder="请选择项目" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(p => (
+                    {projects.map((p) => (
                       <SelectItem key={p.id} value={String(p.id)}>
                         {p.name || `项目 ${p.id}`}
                       </SelectItem>
@@ -597,14 +588,11 @@ export default function PartsPage() {
               <div className="w-64 relative">
                 <label className="text-sm text-slate-500 block mb-1">搜索零件</label>
                 <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
-                    size={16}
-                  />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
                   <Input
                     placeholder="编号/名称/材质/序列号..."
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={(e) => setSearch(e.target.value)}
                     className="pl-10"
                   />
                 </div>
@@ -642,7 +630,7 @@ export default function PartsPage() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b">
                 <tr>
-                  {columns.map(c => (
+                  {columns.map((c) => (
                     <th
                       key={c.key}
                       className="py-3 px-4 text-left whitespace-nowrap font-medium text-slate-700"
@@ -693,12 +681,9 @@ export default function PartsPage() {
                   </tr>
                 )}
                 {!loading &&
-                  sorted.map(pt => (
-                    <tr
-                      key={pt.id}
-                      className="border-b last:border-b-0 hover:bg-blue-50/30 transition-colors"
-                    >
-                      {columns.map(c => (
+                  sorted.map((pt) => (
+                    <tr key={pt.id} className="border-b last:border-b-0 hover:bg-blue-50/30 transition-colors">
+                      {columns.map((c) => (
                         <td key={c.key} className="py-3 px-4 align-middle">
                           {c.render(pt) as any}
                         </td>

@@ -1,14 +1,46 @@
 import base64
 import csv
+import logging
+from dataclasses import dataclass, field
 from io import BytesIO, TextIOWrapper
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import requests
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .models import BomTable, db
-from .services import _validate_image_bytes
+from .database.session import get_db_session
+
+
+def _validate_image_bytes(buf: bytes) -> tuple:
+    """Validate image bytes using PIL. Returns (ok, mime)."""
+    if not buf:
+        return False, None
+    MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10MB
+    if len(buf) > MAX_IMAGE_BYTES:
+        return False, None
+    try:
+        from PIL import Image
+        from io import BytesIO
+        with Image.open(BytesIO(buf)) as img:
+            img.load()
+            fmt = (img.format or "").upper()
+            mime = {"PNG": "image/png", "JPEG": "image/jpeg", "JPG": "image/jpeg",
+                    "GIF": "image/gif", "BMP": "image/bmp", "WEBP": "image/webp"}.get(fmt)
+            return bool(mime), mime
+    except Exception:
+        return False, None
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ImportResult:
+    """导入结果数据类"""
+    created: int = 0
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
 
 
 # 网络请求默认超时（秒）
@@ -81,6 +113,7 @@ def import_csv(file_bytes: bytes, project_id: int | None = None) -> Dict[str, An
     - 尝试解析 image_base64 / image_url，但图片抓取失败不阻止记录创建（将错误记录在 errors 中）
     - 直接使用数据库模型创建 BomTable，避免依赖外部 save_url_image 在网络异常时抛出并中断整个导入
     """
+    session = get_db_session()
     f = TextIOWrapper(BytesIO(file_bytes), encoding="utf-8")
     reader = csv.DictReader(f)
 
@@ -204,7 +237,8 @@ def _find_header_row(ws: Worksheet, max_scan: int = 50) -> int:
 
 
 def import_xlsx(file_bytes: bytes, project_id: int | None = None) -> Dict[str, Any]:
-    logger.debug("DEBUG: import_xlsx called with project_id: {project_id}")
+    logger.debug(f"DEBUG: import_xlsx called with project_id: {project_id}")
+    session = get_db_session()
     wb = load_workbook(BytesIO(file_bytes), data_only=True)
     ws = wb.active
 

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/theme-provider';
+import { QueryProvider, ToastProvider } from '@/providers';
 import HomePage from '@/pages/home';
 import ProjectsPage from '@/pages/projects';
 import ProjectEditPage from '@/pages/project-edit';
@@ -27,35 +28,39 @@ import './globals.css';
 // 主应用入口
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="bom-theme-mode">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/project-edit" element={<ProjectEditPage />} />
-          <Route path="/project-edit/:id" element={<ProjectEditPage />} />
-          <Route path="/parts" element={<PartsPage />} />
-          <Route path="/parts/:id" element={<PartDetailPage />} />
-          <Route path="/parts/new" element={<PartEditPage />} />
-          <Route path="/parts/:id/edit" element={<PartEditPage />} />
-          <Route path="/dimensions" element={<DimensionsPage />} />
-          <Route path="/dimensions/add" element={<DimensionsAddPage />} />
-          <Route path="/templates/preview" element={<TemplatePreviewPage />} />
-          <Route path="/designer" element={<DesignerPage />} />
-          <Route path="/ods" element={<ODSGeneratorPage />} />
-          <Route path="/psw" element={<PSWGeneratorPage />} />
-          <Route path="/process-capability" element={<ProcessCapabilityGeneratorPage />} />
-          <Route path="/table-editor" element={<TableEditorPage />} />
-          <Route path="/dimension-report" element={<DimensionReportPage />} />
-          <Route path="/qualification-rate" element={<QualificationRatePage />} />
-          <Route path="/advanced-qualification-rate" element={<AdvancedQualificationRatePage />} />
-          <Route path="/matrix-qualification-rate" element={<MatrixQualificationRatePage />} />
-          <Route path="/drawing-change" element={<DrawingChangePage />} />
-          <Route path="/dimension-drawing" element={<DimensionDrawingPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </ThemeProvider>
+    <QueryProvider>
+      <ToastProvider>
+        <ThemeProvider defaultTheme="light" storageKey="bom-theme-mode">
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/project-edit" element={<ProjectEditPage />} />
+              <Route path="/project-edit/:id" element={<ProjectEditPage />} />
+              <Route path="/parts" element={<PartsPage />} />
+              <Route path="/parts/:id" element={<PartDetailPage />} />
+              <Route path="/parts/new" element={<PartEditPage />} />
+              <Route path="/parts/:id/edit" element={<PartEditPage />} />
+              <Route path="/dimensions" element={<DimensionsPage />} />
+              <Route path="/dimensions/add" element={<DimensionsAddPage />} />
+              <Route path="/templates/preview" element={<TemplatePreviewPage />} />
+              <Route path="/designer" element={<DesignerPage />} />
+              <Route path="/ods" element={<ODSGeneratorPage />} />
+              <Route path="/psw" element={<PSWGeneratorPage />} />
+              <Route path="/process-capability" element={<ProcessCapabilityGeneratorPage />} />
+              <Route path="/table-editor" element={<TableEditorPage />} />
+              <Route path="/dimension-report" element={<DimensionReportPage />} />
+              <Route path="/qualification-rate" element={<QualificationRatePage />} />
+              <Route path="/advanced-qualification-rate" element={<AdvancedQualificationRatePage />} />
+              <Route path="/matrix-qualification-rate" element={<MatrixQualificationRatePage />} />
+              <Route path="/drawing-change" element={<DrawingChangePage />} />
+              <Route path="/dimension-drawing" element={<DimensionDrawingPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ThemeProvider>
+      </ToastProvider>
+    </QueryProvider>
   );
 }
 

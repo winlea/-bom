@@ -4,15 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Printer, Ruler } from 'lucide-react';
-import { DimensionImageGenerator } from '../components/dimension-image-generator';
+import { DimensionImageGenerator } from '@/components/dimensions';
 
 interface DimRow {
   id: number;
@@ -78,9 +72,7 @@ export default function DimensionReportPage() {
   const [loading, setLoading] = useState(false);
   const [dimensionData, setDimensionData] = useState<DimRow[]>([]);
   const [measured, setMeasured] = useState<MeasuredMap>({});
-  const [parts, setParts] = useState<
-    Array<{ id: number; part_number?: string; part_name?: string }>
-  >([]);
+  const [parts, setParts] = useState<Array<{ id: number; part_number?: string; part_name?: string }>>([]);
 
   const fetchParts = async (projectId: string) => {
     try {
@@ -133,7 +125,7 @@ export default function DimensionReportPage() {
           setDimensionData(transformed);
           // 初始化实测值
           const init: MeasuredMap = {};
-          transformed.forEach(r => (init[r.id] = ['', '', '', '', '']));
+          transformed.forEach((r) => (init[r.id] = ['', '', '', '', '']));
           setMeasured(init);
         } else {
           throw new Error(result.message || '服务器返回错误');
@@ -171,7 +163,7 @@ export default function DimensionReportPage() {
       ];
       setDimensionData(fallback);
       const init: MeasuredMap = {};
-      fallback.forEach(r => (init[r.id] = ['', '', '', '', '']));
+      fallback.forEach((r) => (init[r.id] = ['', '', '', '', '']));
       setMeasured(init);
     } finally {
       setLoading(false);
@@ -196,17 +188,17 @@ export default function DimensionReportPage() {
 
   const groups: DimensionGroup[] = useMemo(() => {
     const g: Record<number, DimRow[]> = {};
-    dimensionData.forEach(r => {
+    dimensionData.forEach((r) => {
       if (!g[r.groupNo]) g[r.groupNo] = [];
       g[r.groupNo].push(r);
     });
     return Object.keys(g)
-      .map(k => ({ groupNumber: parseInt(k, 10), rows: g[parseInt(k, 10)] }))
+      .map((k) => ({ groupNumber: parseInt(k, 10), rows: g[parseInt(k, 10)] }))
       .sort((a, b) => a.groupNumber - b.groupNumber);
   }, [dimensionData]);
 
   const handleChange = (rowId: number, idx: number, value: string) => {
-    setMeasured(prev => {
+    setMeasured((prev) => {
       const next = { ...prev };
       const arr = [...(next[rowId] || ['', '', '', '', ''])];
       arr[idx] = value;
@@ -252,7 +244,7 @@ export default function DimensionReportPage() {
           <div className="flex gap-2">
             <Select
               value={partNumber}
-              onValueChange={v => {
+              onValueChange={(v) => {
                 setPartNumber(v);
                 navigate(
                   `/dimension-report?project_id=${projectId}&project_name=${encodeURIComponent(projectName)}&part_number=${encodeURIComponent(v)}`,
@@ -264,7 +256,7 @@ export default function DimensionReportPage() {
                 <SelectValue placeholder="选择零件（当前项目）" />
               </SelectTrigger>
               <SelectContent>
-                {parts.map(p => {
+                {parts.map((p) => {
                   const label = String(p.part_number || p.part_name || '-');
                   const val = String(p.part_number || p.part_name || '');
                   return (
@@ -290,9 +282,7 @@ export default function DimensionReportPage() {
           <CardHeader className="border-b border-slate-200 bg-slate-50/50">
             <CardTitle className="text-lg font-semibold text-slate-800">
               Excel风格尺寸录入
-              <span className="text-sm font-normal text-slate-500 ml-2">
-                共 {dimensionData.length} 条尺寸
-              </span>
+              <span className="text-sm font-normal text-slate-500 ml-2">共 {dimensionData.length} 条尺寸</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -409,8 +399,7 @@ export default function DimensionReportPage() {
                                 width: '120px',
                               }}
                             >
-                              {(row.dimensionType === 'image_dimension' ||
-                                row.dimensionType === 'image') &&
+                              {(row.dimensionType === 'image_dimension' || row.dimensionType === 'image') &&
                               row.imageUrl ? (
                                 <div className="flex justify-center items-center p-1">
                                   <img
@@ -418,10 +407,8 @@ export default function DimensionReportPage() {
                                     alt="尺寸图片"
                                     className="object-contain border border-gray-200 rounded"
                                     style={{ maxWidth: '110px', maxHeight: '40px' }}
-                                    onClick={() =>
-                                      window.open(`http://localhost:5000${row.imageUrl}`, '_blank')
-                                    }
-                                    onError={e => {
+                                    onClick={() => window.open(`http://localhost:5000${row.imageUrl}`, '_blank')}
+                                    onError={(e) => {
                                       (e.currentTarget as HTMLImageElement).style.display = 'none';
                                     }}
                                   />
@@ -440,18 +427,15 @@ export default function DimensionReportPage() {
                                 </div>
                               )}
                             </td>
-                            {[0, 1, 2, 3, 4].map(i => (
-                              <td
-                                key={i}
-                                className={`text-center p-1 ${i < 4 ? 'border-r border-slate-200' : ''}`}
-                              >
+                            {[0, 1, 2, 3, 4].map((i) => (
+                              <td key={i} className={`text-center p-1 ${i < 4 ? 'border-r border-slate-200' : ''}`}>
                                 <Input
                                   type="text"
                                   inputMode="decimal"
                                   placeholder={`数据${i + 1}`}
                                   className={cellClass(row, mv[i])}
                                   value={mv[i]}
-                                  onChange={e => handleChange(row.id, i, e.target.value)}
+                                  onChange={(e) => handleChange(row.id, i, e.target.value)}
                                 />
                               </td>
                             ))}
@@ -467,8 +451,8 @@ export default function DimensionReportPage() {
         </Card>
 
         <div className="mt-4 text-xs text-slate-500">
-          判定规则：若有上/下公差，判定 v 是否满足 nominal + lower ≤ v ≤ nominal +
-          upper；否则若公差值存在，判定 |v - nominal| ≤ toleranceValue；否则不判定。
+          判定规则：若有上/下公差，判定 v 是否满足 nominal + lower ≤ v ≤ nominal + upper；否则若公差值存在，判定 |v -
+          nominal| ≤ toleranceValue；否则不判定。
         </div>
 
         <div className="mt-6 flex justify-end">

@@ -148,6 +148,44 @@ python -m pytest tests/ -v
 
 详细配置请参考 `.env.example` 文件。
 
+## 代码质量
+
+项目采用严格的代码审查流程：
+
+### 代码检查工具
+
+| 工具 | 用途 | 命令 |
+|------|------|------|
+| black | 代码格式化 | `black bom_system/` |
+| isort | import排序 | `isort bom_system/` |
+| flake8 | 代码风格检查 | `flake8 bom_system/` |
+| mypy | 类型检查 | `mypy bom_system/` |
+| ESLint | 前端代码检查 | `npm run lint` |
+| Prettier | 前端格式化 | `npm run lint:format` |
+
+### Pre-commit Hooks
+
+安装提交前检查：
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+### 代码审查流程
+
+1. 创建分支：`git checkout -b feature/xxx`
+2. 提交前检查：`pre-commit run --all-files`
+3. 创建Pull Request
+4. 等待审查通过
+5. 合并到主分支
+
+详细规范请参考：
+- [代码审查标准与流程](./.github/CODE_REVIEW_README.md)
+- [完整审查指南](./CODE_REVIEW_GUIDE.md)
+
+---
+
 ## 项目结构
 
 ```

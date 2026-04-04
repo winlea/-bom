@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Package,
-  Ruler,
-  FileInput,
-  Menu,
-  X,
-  ChevronRight,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { LayoutDashboard, Package, Ruler, FileInput, Menu, X, ChevronRight, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -117,7 +107,7 @@ export default function Layout({ children, projectCount, partsCount }: LayoutPro
 
           {/* 导航菜单 */}
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {navItems.map(item => (
+            {navItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
@@ -127,9 +117,7 @@ export default function Layout({ children, projectCount, partsCount }: LayoutPro
               >
                 {item.icon}
                 <span className="ml-3">{item.name}</span>
-                {isActive(item.path) && (
-                  <ChevronRight size={16} className="ml-auto text-blue-600" />
-                )}
+                {isActive(item.path) && <ChevronRight size={16} className="ml-auto text-blue-600" />}
               </Link>
             ))}
           </nav>
@@ -180,9 +168,7 @@ export default function Layout({ children, projectCount, partsCount }: LayoutPro
             </Button>
           )}
           <div className="flex-1">
-            <h1 className="text-lg font-medium">
-              {navItems.find(item => isActive(item.path))?.name || 'BOM系统'}
-            </h1>
+            <h1 className="text-lg font-medium">{navItems.find((item) => isActive(item.path))?.name || 'BOM系统'}</h1>
           </div>
           <div className="flex items-center space-x-3">
             <Button variant="outline" size="sm">
@@ -197,9 +183,7 @@ export default function Layout({ children, projectCount, partsCount }: LayoutPro
         {/* 页脚 */}
         <footer className="py-4 px-6 border-t border-slate-200">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-slate-500">
-              &copy; {new Date().getFullYear()} BOM系统 - 零件管理平台
-            </p>
+            <p className="text-sm text-slate-500">&copy; {new Date().getFullYear()} BOM系统 - 零件管理平台</p>
             <div className="flex items-center space-x-4 mt-2 md:mt-0">
               <a href="#" className="text-sm text-slate-500 hover:text-blue-600">
                 关于我们

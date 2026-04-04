@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DimensionDrawingCanvas from '@/components/dimension-drawing-canvas';
-import DimensionDrawingConfig from '@/components/dimension-drawing-config';
-import DimensionDrawingPreview from '@/components/dimension-drawing-preview';
+import { DimensionDrawingCanvas } from '@/components/dimension-tools';
+import { DimensionDrawingConfig } from '@/components/dimension-tools';
+import { DimensionDrawingPreview } from '@/components/dimension-tools';
 import { Button } from '@/components/ui/button';
 import { Save, RefreshCw } from 'lucide-react';
 
@@ -94,7 +94,7 @@ export const DimensionDrawingPage: React.FC = () => {
 
     try {
       // 模拟保存到后端
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       alert('保存成功！');
     } catch (error) {
       console.error('保存失败:', error);
@@ -111,9 +111,7 @@ export const DimensionDrawingPage: React.FC = () => {
           <CardTitle className="text-2xl font-bold">尺寸绘制功能</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-8 text-gray-600">
-            根据尺寸组合数量将画布分成相应部分，并在不同部分绘制不同类型的尺寸数据。
-          </p>
+          <p className="mb-8 text-gray-600">根据尺寸组合数量将画布分成相应部分，并在不同部分绘制不同类型的尺寸数据。</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* 左侧：配置区域 */}

@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -88,23 +82,27 @@ export default function ODSGeneratorPage() {
   // 预览HTML处理
   const processedHtml = useMemo(() => {
     const po: any = (Array.isArray(parts) ? parts : []).find((p: any) => String(p.id) === String(selectedPart)) || {};
-    const partImg = po?.image_url || po?.imageUrl || po?.thumbnail_url || (selectedPart ? `/api/parts/${selectedPart}/image` : '');
+    const partImg =
+      po?.image_url || po?.imageUrl || po?.thumbnail_url || (selectedPart ? `/api/parts/${selectedPart}/image` : '');
 
     const renderRows = (items: DimensionItem[]) => {
-      return items.map(it => {
-        const num = it.number ?? '';
-        const drawing = it.drawing ?? '';
-        const method = it.method ?? '';
-        const special = it.special ?? '';
-        const freq = it.frequency ?? '首/巡/末检';
-        const imageUrl = it.imageUrl ?? '';
-        
-        const drawingContent = imageUrl && imageUrl.trim() !== '' ?
-          `<div style="text-align:center;"><img src="http://localhost:5000${imageUrl}" alt="尺寸图片" style="max-width:60px;max-height:30px;border:1px solid #ddd;border-radius:3px;" /></div>` :
-          drawing;
-        
-        return `<tr><td>${num}</td><td>${drawingContent}</td><td>${method}</td><td>${special}</td><td>${freq}</td></tr>`;
-      }).join('');
+      return items
+        .map((it) => {
+          const num = it.number ?? '';
+          const drawing = it.drawing ?? '';
+          const method = it.method ?? '';
+          const special = it.special ?? '';
+          const freq = it.frequency ?? '首/巡/末检';
+          const imageUrl = it.imageUrl ?? '';
+
+          const drawingContent =
+            imageUrl && imageUrl.trim() !== ''
+              ? `<div style="text-align:center;"><img src="http://localhost:5000${imageUrl}" alt="尺寸图片" style="max-width:60px;max-height:30px;border:1px solid #ddd;border-radius:3px;" /></div>`
+              : drawing;
+
+          return `<tr><td>${num}</td><td>${drawingContent}</td><td>${method}</td><td>${special}</td><td>${freq}</td></tr>`;
+        })
+        .join('');
     };
 
     const commonMap: Record<string, string> = {
@@ -125,13 +123,15 @@ export default function ODSGeneratorPage() {
     }
     if (pages.length === 0) pages.push([]);
 
-    const pageHtmls = pages.map(pageItems => {
+    const pageHtmls = pages.map((pageItems) => {
       let html = inspectionInstructionHtml;
       for (const [k, v] of Object.entries(commonMap)) {
         const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
         html = html.replace(re, v ?? '');
       }
-      const rows = pageItems.length ? renderRows(pageItems) : '<tr><td colspan="5" style="text-align:center;color:#888;">暂无尺寸数据</td></tr>';
+      const rows = pageItems.length
+        ? renderRows(pageItems)
+        : '<tr><td colspan="5" style="text-align:center;color:#888;">暂无尺寸数据</td></tr>';
       html = html.replace(/\{\{DIMENSION_ROWS\}\}/g, rows);
       return html;
     });
@@ -146,26 +146,36 @@ export default function ODSGeneratorPage() {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [containerHeight, setContainerHeight] = useState<number>(600);
   const [previewScale, setPreviewScale] = useState(1);
-  
+
   useEffect(() => {
+    let mounted = true;
+    let ro: ResizeObserver | null = null;
+
     const measureAndResize = () => {
+      if (!mounted) return;
       const el = wrapperRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const availableH = Math.max(300, window.innerHeight - rect.top - 24);
-      setContainerHeight(availableH);
-      const w = el.clientWidth || sheetWidth;
-      const sheetEl = contentRef.current?.querySelector('.instruction-sheet') as HTMLElement | null;
-      const sw = sheetEl?.offsetWidth || sheetWidth;
-      const sh = sheetEl?.offsetHeight || sheetHeightFallback;
-      const s = Math.min(1, w / sw, availableH / sh);
-      setPreviewScale(s);
+      if (!el || !document.contains(el)) return;
+      try {
+        const rect = el.getBoundingClientRect();
+        const availableH = Math.max(300, window.innerHeight - rect.top - 24);
+        setContainerHeight(availableH);
+        const w = el.clientWidth || sheetWidth;
+        const sheetEl = contentRef.current?.querySelector('.instruction-sheet') as HTMLElement | null;
+        const sw = sheetEl?.offsetWidth || sheetWidth;
+        const sh = sheetEl?.offsetHeight || sheetHeightFallback;
+        const s = Math.min(1, w / sw, availableH / sh);
+        setPreviewScale(s);
+      } catch {
+        // Element may be detached from DOM
+      }
     };
+
     measureAndResize();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measureAndResize) : null;
+    ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measureAndResize) : null;
     if (ro && wrapperRef.current) ro.observe(wrapperRef.current);
     window.addEventListener('resize', measureAndResize);
     return () => {
+      mounted = false;
       if (ro) ro.disconnect();
       window.removeEventListener('resize', measureAndResize);
     };
@@ -188,8 +198,8 @@ export default function ODSGeneratorPage() {
             type: 'enhanced_wz1d',
             description: '完整的WZ1D模板，包含215个字段映射和智能工作簿分割',
             recommended: true,
-            features: ['完整字段映射', '智能分割', '图片嵌入', '样式保持']
-          }
+            features: ['完整字段映射', '智能分割', '图片嵌入', '样式保持'],
+          },
         ]);
       }
     };
@@ -239,8 +249,8 @@ export default function ODSGeneratorPage() {
   // 填充表头数据和尺寸数据
   useEffect(() => {
     if (selectedPart && selectedProject) {
-      const part = parts.find(p => p.id === selectedPart);
-      const project = projects.find(p => p.id === selectedProject);
+      const part = parts.find((p) => p.id === selectedPart);
+      const project = projects.find((p) => p.id === selectedProject);
 
       if (part && project) {
         // 获取项目详情，包括客户信息
@@ -255,7 +265,8 @@ export default function ODSGeneratorPage() {
                 partNo: part.part_number || 'Y0704612',
                 customer: projectDetails.customer_name || '德吉亚（武汉）',
                 material: part.final_material_cn || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
-                qbobStandard: part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+                qbobStandard:
+                  part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
                 drawingNo: part.drawing_2d || '',
                 drawingDate: '4266005/01',
                 version: '',
@@ -271,7 +282,8 @@ export default function ODSGeneratorPage() {
               partNo: part.part_number || 'Y0704612',
               customer: '德吉亚（武汉）',
               material: part.final_material_cn || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
-              qbobStandard: part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
+              qbobStandard:
+                part.material_specification || part.original_material || 'CR980T/700Y-MP T=0.8±0.05 GMW3399M-ST-S',
               drawingNo: part.drawing_2d || '',
               drawingDate: '4266005/01',
               version: '',
@@ -297,24 +309,28 @@ export default function ODSGeneratorPage() {
               console.log('已获取真实尺寸数据（包含图片URL）:', dimensionsData);
             } else {
               console.error('获取尺寸数据失败，使用默认数据');
-              setDimensions([{
+              setDimensions([
+                {
+                  number: '1',
+                  drawing: '暂无尺寸数据',
+                  method: '卡尺/游标卡尺',
+                  special: '',
+                  frequency: '首/巡/末检',
+                  imageUrl: '',
+                },
+              ]);
+            }
+          } catch (error) {
+            console.error('获取尺寸数据错误:', error);
+            setDimensions([
+              {
                 number: '1',
                 drawing: '暂无尺寸数据',
                 method: '卡尺/游标卡尺',
                 special: '',
                 frequency: '首/巡/末检',
-                imageUrl: '',
-              }]);
-            }
-          } catch (error) {
-            console.error('获取尺寸数据错误:', error);
-            setDimensions([{
-              number: '1',
-              drawing: '暂无尺寸数据',
-              method: '卡尺/游标卡尺',
-              special: '',
-              frequency: '首/巡/末检',
-            }]);
+              },
+            ]);
           }
         };
 
@@ -354,7 +370,7 @@ export default function ODSGeneratorPage() {
       setLoading(false);
     }
   };
-  
+
   // 生成增强版Excel
   const handleGenerateEnhancedExcel = async () => {
     setLoading(true);
@@ -372,7 +388,7 @@ export default function ODSGeneratorPage() {
           shift: '白班',
           machine: '设备001',
           mold: '模具001',
-          cavity: '1'
+          cavity: '1',
         }),
       });
 
@@ -381,9 +397,11 @@ export default function ODSGeneratorPage() {
         const partInfo = result.part_info || {};
         const genInfo = result.generation_info || {};
         const files = result.files || [];
-        
-        alert(`✅ 增强版WZ1D Excel生成成功！\n\n📋 零件信息:\n- 名称: ${partInfo.part_name}\n- 编号: ${partInfo.part_number}\n\n📊 生成统计:\n- 总尺寸: ${genInfo.total_dimensions}个\n- 工作簿: ${genInfo.workbooks_count}个\n- 文件数: ${genInfo.files_generated}个\n\n📄 生成的文件:\n${files.map((f: any, i: number) => `${i + 1}. ${f.filename} (${f.dimensions_count}个尺寸)`).join('\n')}\n\n💡 文件已自动下载到浏览器默认下载目录`);
-        
+
+        alert(
+          `✅ 增强版WZ1D Excel生成成功！\n\n📋 零件信息:\n- 名称: ${partInfo.part_name}\n- 编号: ${partInfo.part_number}\n\n📊 生成统计:\n- 总尺寸: ${genInfo.total_dimensions}个\n- 工作簿: ${genInfo.workbooks_count}个\n- 文件数: ${genInfo.files_generated}个\n\n📄 生成的文件:\n${files.map((f: any, i: number) => `${i + 1}. ${f.filename} (${f.dimensions_count}个尺寸)`).join('\n')}\n\n💡 文件已自动下载到浏览器默认下载目录`
+        );
+
         if (result.download_urls && result.download_urls.length > 0) {
           const firstFileUrl = result.download_urls[0];
           window.open(firstFileUrl, '_blank');
@@ -413,11 +431,11 @@ export default function ODSGeneratorPage() {
 
     try {
       setLoading(true);
-      
+
       // 根据选择的预览类型调用对应的API
       let apiUrl = '';
       let requestData = {};
-      
+
       if (selectedPreviewType === 'enhanced_wz1d') {
         // 使用增强版WZ1D API生成预览
         apiUrl = 'http://localhost:5000/api/enhanced_wz1d_ods/generate';
@@ -432,7 +450,7 @@ export default function ODSGeneratorPage() {
           machine: '设备001',
           mold: '模具001',
           cavity: '1',
-          preview_mode: true // 标记为预览模式
+          preview_mode: true, // 标记为预览模式
         };
       } else {
         // 使用基础ODS API生成预览
@@ -440,7 +458,7 @@ export default function ODSGeneratorPage() {
         requestData = {
           part_id: selectedPart,
           header_data: headerData,
-          preview_mode: true // 标记为预览模式
+          preview_mode: true, // 标记为预览模式
         };
       }
 
@@ -462,9 +480,11 @@ export default function ODSGeneratorPage() {
         const partInfo = result.part_info || {};
         const genInfo = result.generation_info || {};
         const files = result.files || [];
-        
-        alert(`✅ WZ1D模板预览生成成功！\n\n📋 零件信息:\n- 名称: ${partInfo.part_name}\n- 编号: ${partInfo.part_number}\n\n📊 预览统计:\n- 总尺寸: ${genInfo.total_dimensions}个\n- 工作簿: ${genInfo.workbooks_count}个\n- 文件数: ${genInfo.files_generated}个\n\n📄 预览文件:\n${files.map((f: any, i: number) => `${i + 1}. ${f.filename} (${f.dimensions_count}个尺寸)`).join('\n')}\n\n💡 这就是最终生成的Excel文件格式！`);
-        
+
+        alert(
+          `✅ WZ1D模板预览生成成功！\n\n📋 零件信息:\n- 名称: ${partInfo.part_name}\n- 编号: ${partInfo.part_number}\n\n📊 预览统计:\n- 总尺寸: ${genInfo.total_dimensions}个\n- 工作簿: ${genInfo.workbooks_count}个\n- 文件数: ${genInfo.files_generated}个\n\n📄 预览文件:\n${files.map((f: any, i: number) => `${i + 1}. ${f.filename} (${f.dimensions_count}个尺寸)`).join('\n')}\n\n💡 这就是最终生成的Excel文件格式！`
+        );
+
         // 打开预览文件
         if (result.download_urls && result.download_urls.length > 0) {
           const firstFileUrl = result.download_urls[0];
@@ -481,13 +501,14 @@ export default function ODSGeneratorPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         alert(`✅ ODS模板预览生成成功！\n\n📄 预览文件已下载\n💡 这就是最终生成的Excel文件格式！`);
       }
-
     } catch (error) {
       console.error('预览生成错误:', error);
-      alert(`❌ 预览生成失败\n\n错误信息: ${error instanceof Error ? error.message : '未知错误'}\n\n请确保:\n1. 已选择零件\n2. 后端服务正常运行\n3. 选择了正确的预览类型`);
+      alert(
+        `❌ 预览生成失败\n\n错误信息: ${error instanceof Error ? error.message : '未知错误'}\n\n请确保:\n1. 已选择零件\n2. 后端服务正常运行\n3. 选择了正确的预览类型`
+      );
     } finally {
       setLoading(false);
     }
@@ -528,7 +549,7 @@ export default function ODSGeneratorPage() {
                     <SelectValue placeholder="请选择项目" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
+                    {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>
@@ -545,7 +566,7 @@ export default function ODSGeneratorPage() {
                     <SelectValue placeholder={selectedProject ? '请选择零件' : '请先选择项目'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {parts.map(part => (
+                    {parts.map((part) => (
                       <SelectItem key={part.id} value={part.id}>
                         <div className="flex flex-col">
                           <span className="font-medium">{part.part_name}</span>
@@ -567,7 +588,7 @@ export default function ODSGeneratorPage() {
                     <SelectValue placeholder="选择预览类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    {previewTypes.map(type => (
+                    {previewTypes.map((type) => (
                       <SelectItem key={type.type} value={type.type}>
                         <div className="flex flex-col">
                           <span className="font-medium">{type.name}</span>
@@ -587,7 +608,7 @@ export default function ODSGeneratorPage() {
                     <Label className="text-xs text-gray-600">图纸日期</Label>
                     <Input
                       value={headerData.drawingDate}
-                      onChange={e => setHeaderData(prev => ({ ...prev, drawingDate: e.target.value }))}
+                      onChange={(e) => setHeaderData((prev) => ({ ...prev, drawingDate: e.target.value }))}
                       placeholder="如：4266005/01"
                       className="h-9 text-sm"
                     />
@@ -596,7 +617,7 @@ export default function ODSGeneratorPage() {
                     <Label className="text-xs text-gray-600">版本</Label>
                     <Input
                       value={headerData.version}
-                      onChange={e => setHeaderData(prev => ({ ...prev, version: e.target.value }))}
+                      onChange={(e) => setHeaderData((prev) => ({ ...prev, version: e.target.value }))}
                       placeholder="如：A0"
                       className="h-9 text-sm"
                     />
@@ -605,7 +626,7 @@ export default function ODSGeneratorPage() {
                     <Label className="text-xs text-gray-600">工位名称</Label>
                     <Select
                       value={headerData.stationName}
-                      onValueChange={value => setHeaderData(prev => ({ ...prev, stationName: value }))}
+                      onValueChange={(value) => setHeaderData((prev) => ({ ...prev, stationName: value }))}
                     >
                       <SelectTrigger className="h-9">
                         <SelectValue placeholder="请选择工位" />
@@ -627,15 +648,28 @@ export default function ODSGeneratorPage() {
                   <Eye className="w-4 h-4 mr-2" />
                   简易预览
                 </Button>
-                <Button onClick={handleTemplatePreview} variant="outline" className="w-full h-9" disabled={!selectedPart || loading}>
+                <Button
+                  onClick={handleTemplatePreview}
+                  variant="outline"
+                  className="w-full h-9"
+                  disabled={!selectedPart || loading}
+                >
                   <FileText className="w-4 h-4 mr-2" />
                   {loading ? '生成预览中...' : '动态预览'}
                 </Button>
-                <Button onClick={handleGenerateODS} className="w-full h-9 bg-blue-600 hover:bg-blue-700" disabled={!selectedPart || loading}>
+                <Button
+                  onClick={handleGenerateODS}
+                  className="w-full h-9 bg-blue-600 hover:bg-blue-700"
+                  disabled={!selectedPart || loading}
+                >
                   <Download className="w-4 h-4 mr-2" />
                   {loading ? '生成中...' : '生成Excel(模板版)'}
                 </Button>
-                <Button onClick={handleGenerateEnhancedExcel} className="w-full h-9 bg-green-600 hover:bg-green-700" disabled={!selectedPart || loading}>
+                <Button
+                  onClick={handleGenerateEnhancedExcel}
+                  className="w-full h-9 bg-green-600 hover:bg-green-700"
+                  disabled={!selectedPart || loading}
+                >
                   <Download className="w-4 h-4 mr-2" />
                   {loading ? '生成中...' : '生成增强版WZ1D'}
                 </Button>
@@ -658,9 +692,15 @@ export default function ODSGeneratorPage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <h3 className="font-semibold text-blue-800 mb-2">⚠️ 重要说明</h3>
                     <div className="text-sm text-blue-700 space-y-2">
-                      <p><strong>当前显示</strong>：简化的HTML预览（仅供参考）</p>
-                      <p><strong>实际生成</strong>：复杂的WZ1D Excel模板（与预览不同）</p>
-                      <p><strong>获取真实预览</strong>：请点击左侧"动态预览"按钮下载实际的Excel文件</p>
+                      <p>
+                        <strong>当前显示</strong>：简化的HTML预览（仅供参考）
+                      </p>
+                      <p>
+                        <strong>实际生成</strong>：复杂的WZ1D Excel模板（与预览不同）
+                      </p>
+                      <p>
+                        <strong>获取真实预览</strong>：请点击左侧"动态预览"按钮下载实际的Excel文件
+                      </p>
                     </div>
                   </div>
 
@@ -706,7 +746,7 @@ export default function ODSGeneratorPage() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">预览类型:</span>
                           <span className="font-medium">
-                            {previewTypes.find(t => t.type === selectedPreviewType)?.name || '增强版WZ1D'}
+                            {previewTypes.find((t) => t.type === selectedPreviewType)?.name || '增强版WZ1D'}
                           </span>
                         </div>
                       </div>
@@ -729,15 +769,17 @@ export default function ODSGeneratorPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {dimensions.length > 0 ? dimensions.map((dim, index) => (
-                              <tr key={index} className="hover:bg-gray-50">
-                                <td className="px-3 py-2 border-b">{dim.number}</td>
-                                <td className="px-3 py-2 border-b">{dim.drawing}</td>
-                                <td className="px-3 py-2 border-b">{dim.method}</td>
-                                <td className="px-3 py-2 border-b">{dim.special}</td>
-                                <td className="px-3 py-2 border-b">{dim.frequency}</td>
-                              </tr>
-                            )) : (
+                            {dimensions.length > 0 ? (
+                              dimensions.map((dim, index) => (
+                                <tr key={index} className="hover:bg-gray-50">
+                                  <td className="px-3 py-2 border-b">{dim.number}</td>
+                                  <td className="px-3 py-2 border-b">{dim.drawing}</td>
+                                  <td className="px-3 py-2 border-b">{dim.method}</td>
+                                  <td className="px-3 py-2 border-b">{dim.special}</td>
+                                  <td className="px-3 py-2 border-b">{dim.frequency}</td>
+                                </tr>
+                              ))
+                            ) : (
                               <tr>
                                 <td colSpan={5} className="px-3 py-4 text-center text-gray-500">
                                   暂无尺寸数据
@@ -754,10 +796,18 @@ export default function ODSGeneratorPage() {
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <h4 className="font-semibold text-green-800 mb-2">📋 操作指南</h4>
                     <div className="text-sm text-green-700 space-y-1">
-                      <p>1. <strong>简易预览</strong>：查看基本的HTML格式预览</p>
-                      <p>2. <strong>动态预览</strong>：生成真实的Excel文件预览（推荐）</p>
-                      <p>3. <strong>生成Excel(模板版)</strong>：生成基础版本的ODS文档</p>
-                      <p>4. <strong>生成增强版WZ1D</strong>：生成完整的215字段WZ1D文档</p>
+                      <p>
+                        1. <strong>简易预览</strong>：查看基本的HTML格式预览
+                      </p>
+                      <p>
+                        2. <strong>动态预览</strong>：生成真实的Excel文件预览（推荐）
+                      </p>
+                      <p>
+                        3. <strong>生成Excel(模板版)</strong>：生成基础版本的ODS文档
+                      </p>
+                      <p>
+                        4. <strong>生成增强版WZ1D</strong>：生成完整的215字段WZ1D文档
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -766,8 +816,7 @@ export default function ODSGeneratorPage() {
                   <FileSpreadsheet className="h-16 w-16 mb-4 opacity-30" />
                   <h3 className="text-lg font-medium mb-2">请选择项目和零件</h3>
                   <p className="text-sm text-center max-w-md">
-                    在左侧选择项目和零件后，这里将显示零件信息和尺寸数据。
-                    要查看真实的Excel格式，请使用"动态预览"功能。
+                    在左侧选择项目和零件后，这里将显示零件信息和尺寸数据。 要查看真实的Excel格式，请使用"动态预览"功能。
                   </p>
                 </div>
               )}

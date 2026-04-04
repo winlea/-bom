@@ -197,12 +197,10 @@ const DesignerPage: React.FC = () => {
     <div className="mx-auto max-w-[1600px] p-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="text-lg font-semibold">ODS 模板设计器（Luckysheet）</span>
-        <span className="text-sm text-gray-500">
-          插入占位符时默认左对齐并换行，避免字段过长只显示一半。
-        </span>
+        <span className="text-sm text-gray-500">插入占位符时默认左对齐并换行，避免字段过长只显示一半。</span>
       </div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        {placeholders.map(p => (
+        {placeholders.map((p) => (
           <button
             key={p}
             onClick={() => insertPlaceholder(p)}
@@ -213,10 +211,7 @@ const DesignerPage: React.FC = () => {
           </button>
         ))}
         <div className="ml-4 flex items-center gap-2">
-          <button
-            onClick={exportJson}
-            className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
-          >
+          <button onClick={exportJson} className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm">
             导出模板JSON
           </button>
           <label className="px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50 text-sm cursor-pointer">
@@ -225,7 +220,7 @@ const DesignerPage: React.FC = () => {
               type="file"
               accept="application/json"
               className="hidden"
-              onChange={e => importJson(e.target.files)}
+              onChange={(e) => importJson(e.target.files)}
             />
           </label>
         </div>

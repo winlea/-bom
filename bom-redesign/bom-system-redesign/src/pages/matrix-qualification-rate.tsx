@@ -107,7 +107,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
     // 筛选
     if (filterRate !== 'all') {
-      filteredParts = filteredParts.filter(part => {
+      filteredParts = filteredParts.filter((part) => {
         if (filterRate === 'high') return part.qualification_rate >= 95;
         if (filterRate === 'medium') return part.qualification_rate >= 85 && part.qualification_rate < 95;
         if (filterRate === 'low') return part.qualification_rate < 85;
@@ -132,7 +132,7 @@ const MatrixQualificationRatePage: React.FC = () => {
   // 导出Excel
   const handleExport = () => {
     if (!matrixData) return;
-    
+
     const csvContent = generateCSV();
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -151,21 +151,21 @@ const MatrixQualificationRatePage: React.FC = () => {
     if (!matrixData) return '';
 
     const parts = getFilteredAndSortedParts();
-    const headers = ['统计指标', ...parts.map(p => p.part_number)];
-    
+    const headers = ['统计指标', ...parts.map((p) => p.part_number)];
+
     const rows = [
-      ['零件号', ...parts.map(p => p.part_number)],
-      ['零件名称', ...parts.map(p => p.part_name)],
-      ['BOM层级', ...parts.map(p => p.bom_level.toString())],
-      ['全尺寸数量', ...parts.map(p => p.total_dimensions.toString())],
-      ['全尺寸合格', ...parts.map(p => p.qualified_dimensions.toString())],
-      ['全尺寸率', ...parts.map(p => `${p.qualification_rate.toFixed(1)}%`)],
-      ['CCSC数量', ...parts.map(p => p.ccsc_total.toString())],
-      ['CCSC合格', ...parts.map(p => p.ccsc_qualified.toString())],
-      ['CCSC率', ...parts.map(p => `${p.ccsc_rate.toFixed(1)}%`)],
+      ['零件号', ...parts.map((p) => p.part_number)],
+      ['零件名称', ...parts.map((p) => p.part_name)],
+      ['BOM层级', ...parts.map((p) => p.bom_level.toString())],
+      ['全尺寸数量', ...parts.map((p) => p.total_dimensions.toString())],
+      ['全尺寸合格', ...parts.map((p) => p.qualified_dimensions.toString())],
+      ['全尺寸率', ...parts.map((p) => `${p.qualification_rate.toFixed(1)}%`)],
+      ['CCSC数量', ...parts.map((p) => p.ccsc_total.toString())],
+      ['CCSC合格', ...parts.map((p) => p.ccsc_qualified.toString())],
+      ['CCSC率', ...parts.map((p) => `${p.ccsc_rate.toFixed(1)}%`)],
     ];
 
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
+    return [headers, ...rows].map((row) => row.join(',')).join('\n');
   };
 
   const filteredParts = getFilteredAndSortedParts();
@@ -252,12 +252,7 @@ const MatrixQualificationRatePage: React.FC = () => {
                 <RotateCcw className="h-4 w-4 mr-1" />
                 刷新
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={!matrixData || loading}
-              >
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={!matrixData || loading}>
                 <Download className="h-4 w-4 mr-1" />
                 导出
               </Button>
@@ -271,11 +266,7 @@ const MatrixQualificationRatePage: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>零件质量统计矩阵</span>
-            {matrixData && (
-              <Badge variant="secondary">
-                共 {filteredParts.length} 个零件
-              </Badge>
-            )}
+            {matrixData && <Badge variant="secondary">共 {filteredParts.length} 个零件</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -310,9 +301,7 @@ const MatrixQualificationRatePage: React.FC = () => {
                 <tbody>
                   {/* 零件名称行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      零件名称
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">零件名称</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
                         {part.part_name}
@@ -322,9 +311,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* 全尺寸数量行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      全尺寸数量
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">全尺寸数量</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
                         {part.total_dimensions.toLocaleString()}
@@ -334,9 +321,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* 全尺寸合格行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      全尺寸合格
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">全尺寸合格</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
                         {part.qualified_dimensions.toLocaleString()}
@@ -346,12 +331,12 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* 全尺寸率行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      全尺寸率
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">全尺寸率</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${getQualificationRateColor(part.qualification_rate)}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-sm font-medium ${getQualificationRateColor(part.qualification_rate)}`}
+                        >
                           {part.qualification_rate.toFixed(1)}%
                         </span>
                       </td>
@@ -360,9 +345,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* CCSC数量行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      CCSC数量
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">CCSC数量</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
                         {part.ccsc_total.toLocaleString()}
@@ -372,9 +355,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* CCSC合格行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      CCSC合格
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">CCSC合格</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
                         {part.ccsc_qualified.toLocaleString()}
@@ -384,12 +365,12 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* CCSC率行 */}
                   <tr>
-                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">
-                      CCSC率
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-medium bg-gray-50">CCSC率</td>
                     {filteredParts.map((part) => (
                       <td key={part.part_id} className="border border-gray-300 px-3 py-2 text-center">
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${getQualificationRateColor(part.ccsc_rate)}`}>
+                        <span
+                          className={`px-2 py-1 rounded text-sm font-medium ${getQualificationRateColor(part.ccsc_rate)}`}
+                        >
                           {part.ccsc_rate.toFixed(1)}%
                         </span>
                       </td>
@@ -398,9 +379,7 @@ const MatrixQualificationRatePage: React.FC = () => {
 
                   {/* 汇总行 */}
                   <tr className="bg-blue-50">
-                    <td className="border border-gray-300 px-3 py-2 font-bold text-blue-900">
-                      项目汇总
-                    </td>
+                    <td className="border border-gray-300 px-3 py-2 font-bold text-blue-900">项目汇总</td>
                     <td className="border border-gray-300 px-3 py-2 text-center font-medium text-blue-900">
                       全尺寸总数: {matrixData.summary.total_dimensions_sum.toLocaleString()}
                     </td>
@@ -456,8 +435,15 @@ const MatrixQualificationRatePage: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className={`text-2xl font-bold ${getQualificationRateColor(matrixData.summary.overall_qualification_rate).includes('green') ? 'text-green-600' : 
-                getQualificationRateColor(matrixData.summary.overall_qualification_rate).includes('yellow') ? 'text-yellow-600' : 'text-red-600'}`}>
+              <div
+                className={`text-2xl font-bold ${
+                  getQualificationRateColor(matrixData.summary.overall_qualification_rate).includes('green')
+                    ? 'text-green-600'
+                    : getQualificationRateColor(matrixData.summary.overall_qualification_rate).includes('yellow')
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                }`}
+              >
                 {matrixData.summary.overall_qualification_rate.toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600">项目合格率</div>
@@ -465,9 +451,7 @@ const MatrixQualificationRatePage: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-purple-600">
-                {filteredParts.length}
-              </div>
+              <div className="text-2xl font-bold text-purple-600">{filteredParts.length}</div>
               <div className="text-sm text-gray-600">零件数量</div>
             </CardContent>
           </Card>

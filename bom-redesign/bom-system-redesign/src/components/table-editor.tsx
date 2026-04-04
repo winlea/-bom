@@ -3,13 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -70,9 +64,7 @@ export default function TableEditor({
 
   const [rows, setRows] = useState(initialRows);
   const [cols, setCols] = useState(initialCols);
-  const [tableData, setTableData] = useState<Cell[][]>(
-    initialData || initializeTable(initialRows, initialCols)
-  );
+  const [tableData, setTableData] = useState<Cell[][]>(initialData || initializeTable(initialRows, initialCols));
   const [selectedCells, setSelectedCells] = useState<string[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [startCell, setStartCell] = useState<string | null>(null);
@@ -114,9 +106,7 @@ export default function TableEditor({
 
     if (event.ctrlKey || event.metaKey) {
       // 多选模式
-      setSelectedCells(prev =>
-        prev.includes(cellId) ? prev.filter(id => id !== cellId) : [...prev, cellId]
-      );
+      setSelectedCells((prev) => (prev.includes(cellId) ? prev.filter((id) => id !== cellId) : [...prev, cellId]));
     } else {
       // 单选模式
       setSelectedCells([cellId]);
@@ -176,7 +166,7 @@ export default function TableEditor({
   const updateCellContent = () => {
     const newTableData = [...tableData];
 
-    selectedCells.forEach(cellId => {
+    selectedCells.forEach((cellId) => {
       const [rowIndex, colIndex] = cellId.split('-').map(Number);
       if (rowIndex >= 0 && rowIndex < rows && colIndex >= 0 && colIndex < cols) {
         newTableData[rowIndex][colIndex] = {
@@ -193,7 +183,7 @@ export default function TableEditor({
   const updateCellStyle = (property: string, value: string) => {
     const newTableData = [...tableData];
 
-    selectedCells.forEach(cellId => {
+    selectedCells.forEach((cellId) => {
       const [rowIndex, colIndex] = cellId.split('-').map(Number);
       if (rowIndex >= 0 && rowIndex < rows && colIndex >= 0 && colIndex < cols) {
         newTableData[rowIndex][colIndex] = {
@@ -211,8 +201,8 @@ export default function TableEditor({
     if (selectedCells.length <= 1) return;
 
     // 找出选择区域的边界
-    const rowIndices = selectedCells.map(id => parseInt(id.split('-')[0]));
-    const colIndices = selectedCells.map(id => parseInt(id.split('-')[1]));
+    const rowIndices = selectedCells.map((id) => parseInt(id.split('-')[0]));
+    const colIndices = selectedCells.map((id) => parseInt(id.split('-')[1]));
 
     const minRow = Math.min(...rowIndices);
     const maxRow = Math.max(...rowIndices);
@@ -312,7 +302,7 @@ export default function TableEditor({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target?.result as string);
         if (Array.isArray(importedData) && importedData.length > 0) {
@@ -379,12 +369,12 @@ export default function TableEditor({
     navigator.clipboard
       .writeText(htmlCode)
       .then(() => alert('HTML代码已复制到剪贴板'))
-      .catch(err => console.error('复制失败:', err));
+      .catch((err) => console.error('复制失败:', err));
   };
 
   // 更新边框样式
   const updateBorder = (position: 'top' | 'right' | 'bottom' | 'left', value: string) => {
-    setBorderStyle(prev => ({
+    setBorderStyle((prev) => ({
       ...prev,
       [position]: value,
     }));
@@ -412,7 +402,7 @@ export default function TableEditor({
             min="1"
             max="100"
             value={rows}
-            onChange={e => setRows(parseInt(e.target.value) || 1)}
+            onChange={(e) => setRows(parseInt(e.target.value) || 1)}
             className="w-20"
           />
         </div>
@@ -424,7 +414,7 @@ export default function TableEditor({
             min="1"
             max="26"
             value={cols}
-            onChange={e => setCols(parseInt(e.target.value) || 1)}
+            onChange={(e) => setCols(parseInt(e.target.value) || 1)}
             className="w-20"
           />
         </div>
@@ -437,9 +427,7 @@ export default function TableEditor({
         </Button>
         <Button onClick={exportTableData}>导出表格</Button>
         <label className="cursor-pointer">
-          <span className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md">
-            导入表格
-          </span>
+          <span className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md">导入表格</span>
           <input type="file" accept=".json" onChange={importTableData} className="hidden" />
         </label>
         <Button onClick={copyHtmlCode}>复制HTML代码</Button>
@@ -501,7 +489,7 @@ export default function TableEditor({
                         }}
                         rowSpan={cell.rowSpan > 0 ? cell.rowSpan : undefined}
                         colSpan={cell.colSpan > 0 ? cell.colSpan : undefined}
-                        onClick={e => handleCellClick(rowIndex, colIndex, e)}
+                        onClick={(e) => handleCellClick(rowIndex, colIndex, e)}
                         onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
                       >
                         {cell.content}
@@ -533,7 +521,7 @@ export default function TableEditor({
                   <Input
                     id="cell-content"
                     value={cellContent}
-                    onChange={e => setCellContent(e.target.value)}
+                    onChange={(e) => setCellContent(e.target.value)}
                     onBlur={updateCellContent}
                     placeholder="输入单元格内容"
                   />
@@ -548,13 +536,13 @@ export default function TableEditor({
                       id="bg-color"
                       type="color"
                       value={backgroundColor}
-                      onChange={e => setBackgroundColor(e.target.value)}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
                       onBlur={() => updateCellStyle('backgroundColor', backgroundColor)}
                       className="w-12 h-8 p-0"
                     />
                     <Input
                       value={backgroundColor}
-                      onChange={e => setBackgroundColor(e.target.value)}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
                       onBlur={() => updateCellStyle('backgroundColor', backgroundColor)}
                       className="flex-1"
                     />
@@ -568,13 +556,13 @@ export default function TableEditor({
                       id="text-color"
                       type="color"
                       value={textColor}
-                      onChange={e => setTextColor(e.target.value)}
+                      onChange={(e) => setTextColor(e.target.value)}
                       onBlur={() => updateCellStyle('textColor', textColor)}
                       className="w-12 h-8 p-0"
                     />
                     <Input
                       value={textColor}
-                      onChange={e => setTextColor(e.target.value)}
+                      onChange={(e) => setTextColor(e.target.value)}
                       onBlur={() => updateCellStyle('textColor', textColor)}
                       className="flex-1"
                     />
@@ -585,7 +573,7 @@ export default function TableEditor({
                   <Label htmlFor="font-weight">字体粗细</Label>
                   <Select
                     value={fontWeight}
-                    onValueChange={value => {
+                    onValueChange={(value) => {
                       setFontWeight(value);
                       updateCellStyle('fontWeight', value);
                     }}
@@ -604,7 +592,7 @@ export default function TableEditor({
                   <Label htmlFor="text-align">水平对齐</Label>
                   <Select
                     value={textAlign}
-                    onValueChange={value => {
+                    onValueChange={(value) => {
                       setTextAlign(value);
                       updateCellStyle('textAlign', value);
                     }}
@@ -624,7 +612,7 @@ export default function TableEditor({
                   <Label htmlFor="vertical-align">垂直对齐</Label>
                   <Select
                     value={verticalAlign}
-                    onValueChange={value => {
+                    onValueChange={(value) => {
                       setVerticalAlign(value);
                       updateCellStyle('verticalAlign', value);
                     }}
@@ -649,7 +637,7 @@ export default function TableEditor({
                       <Checkbox
                         id="border-top"
                         checked={borderStyle.top !== 'none'}
-                        onCheckedChange={checked => {
+                        onCheckedChange={(checked) => {
                           updateBorder('top', checked ? '1px solid #000' : 'none');
                         }}
                       />
@@ -659,7 +647,7 @@ export default function TableEditor({
                       <Checkbox
                         id="border-right"
                         checked={borderStyle.right !== 'none'}
-                        onCheckedChange={checked => {
+                        onCheckedChange={(checked) => {
                           updateBorder('right', checked ? '1px solid #000' : 'none');
                         }}
                       />
@@ -669,7 +657,7 @@ export default function TableEditor({
                       <Checkbox
                         id="border-bottom"
                         checked={borderStyle.bottom !== 'none'}
-                        onCheckedChange={checked => {
+                        onCheckedChange={(checked) => {
                           updateBorder('bottom', checked ? '1px solid #000' : 'none');
                         }}
                       />
@@ -679,7 +667,7 @@ export default function TableEditor({
                       <Checkbox
                         id="border-left"
                         checked={borderStyle.left !== 'none'}
-                        onCheckedChange={checked => {
+                        onCheckedChange={(checked) => {
                           updateBorder('left', checked ? '1px solid #000' : 'none');
                         }}
                       />
