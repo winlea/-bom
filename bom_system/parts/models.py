@@ -1,6 +1,6 @@
 """零件基础库模型 - 共享零件信息"""
 from datetime import datetime, timezone
-from .models import db
+from bom_system.models import db
 
 
 def _utcnow():
